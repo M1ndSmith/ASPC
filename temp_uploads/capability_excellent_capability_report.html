@@ -1,0 +1,133 @@
+
+        <html>
+        <head>
+            <title>Process Capability Analysis Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; }
+                .section { margin-bottom: 30px; }
+                .metrics-table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+                .metrics-table th, .metrics-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                .metrics-table th { background-color: #4CAF50; color: white; }
+                .excellent { color: green; font-weight: bold; }
+                .adequate { color: orange; font-weight: bold; }
+                .poor { color: red; font-weight: bold; }
+                .spec-box { background-color: #f0f0f0; padding: 15px; border-left: 4px solid #4CAF50; }
+            </style>
+        </head>
+        <body>
+            <h1>Process Capability Analysis Report</h1>
+            
+            <div class="section spec-box">
+                <h2>Specifications</h2>
+                <p><strong>USL:</strong> 10.5</p>
+                <p><strong>LSL:</strong> 9.5</p>
+                <p><strong>Target:</strong> 10.0</p>
+                <p><strong>Tolerance:</strong> 1.0</p>
+            </div>
+            
+            <div class="section">
+                <h2>⚠️ Normality Test Results</h2>
+                <p><strong>Is Normal:</strong> <span class="excellent">
+                    ✓ YES
+                </span></p>
+                <p><strong>Confidence:</strong> Medium</p>
+                <p><strong>Tests Passed:</strong> 3/5</p>
+                <p><strong>Recommendation:</strong> Data appears normally distributed. Cp/Cpk calculations are valid.</p>
+                <details>
+                    <summary>Click for detailed test results</summary>
+                    <ul>
+                        <li><strong>Anderson-Darling:</strong> ✗ Fail 
+                            (Stat: 0.8368131002127726)</li>
+                        <li><strong>Shapiro-Wilk:</strong> ✗ Fail 
+                            (p-value: 0.028747811832861007)</li>
+                        <li><strong>Skewness:</strong> -0.000 
+                            (✓ Acceptable)</li>
+                        <li><strong>Kurtosis:</strong> -0.859 
+                            (✓ Acceptable)</li>
+                    </ul>
+                </details>
+            </div>
+            
+            <div class="section">
+                <h2>Capability Indices</h2>
+                <table class="metrics-table">
+                    <tr>
+                        <th>Index</th>
+                        <th>Value</th>
+                        <th>Interpretation</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Cp</strong> (Potential Capability)</td>
+                        <td>9.722</td>
+                        <td class="excellent">
+                            Excellent
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cpk</strong> (Actual Capability)</td>
+                        <td>8.750</td>
+                        <td class="excellent">
+                            Excellent
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pp</strong> (Potential Performance)</td>
+                        <td>9.722</td>
+                        <td class="excellent">
+                            Excellent
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ppk</strong> (Actual Performance)</td>
+                        <td>8.750</td>
+                        <td class="excellent">
+                            Excellent
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h2>Process Performance</h2>
+                <p><strong>Mean:</strong> 10.0500</p>
+                <p><strong>Std Dev:</strong> 0.0171</p>
+                <p><strong>Yield:</strong> 100.00%</p>
+                <p><strong>DPMO:</strong> 0</p>
+                <p><strong>Defects:</strong> 0 out of 50</p>
+            </div>
+            
+            <div class="section">
+                <h2>Process Centering</h2>
+                <p><strong>Process Mean:</strong> 10.0500</p>
+                <p><strong>Spec Midpoint:</strong> 10.0000</p>
+                <p><strong>Offset:</strong> 0.0500</p>
+                <p><strong>Status:</strong> <span class="excellent">Process is well centered</span></p>
+            </div>
+            
+            <div class="section">
+                <h2>Visualizations</h2>
+                <html>
+<head><meta charset="utf-8" /></head>
+<body>
+    <div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.1.1.min.js" integrity="sha256-HUEFyfiTnZJxCxur99FjbKYTvKSzwDaD3/x5TqHpFu4=" crossorigin="anonymous"></script>                <div id="49daeecb-13fc-4a42-a93c-9e8c2fedd2dd" class="plotly-graph-div" style="height:800px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("49daeecb-13fc-4a42-a93c-9e8c2fedd2dd")) {                    Plotly.newPlot(                        "49daeecb-13fc-4a42-a93c-9e8c2fedd2dd",                        [{"name":"Data","nbinsx":30,"showlegend":false,"x":{"dtype":"f8","bdata":"mpmZmZkZJEApXI\u002fC9SgkQArXo3A9CiRAH4XrUbgeJEAUrkfhehQkQKRwPQrXIyRAj8L1KFwPJECamZmZmRkkQB+F61G4HiRAFK5H4XoUJEApXI\u002fC9SgkQArXo3A9CiRAmpmZmZkZJECkcD0K1yMkQI\u002fC9ShcDyRAH4XrUbgeJEAUrkfhehQkQJqZmZmZGSRApHA9CtcjJECPwvUoXA8kQJqZmZmZGSRAH4XrUbgeJEAUrkfhehQkQClcj8L1KCRACtejcD0KJECamZmZmRkkQKRwPQrXIyRAj8L1KFwPJEAfhetRuB4kQBSuR+F6FCRAmpmZmZkZJECkcD0K1yMkQI\u002fC9ShcDyRAmpmZmZkZJEAfhetRuB4kQBSuR+F6FCRAKVyPwvUoJEAK16NwPQokQJqZmZmZGSRApHA9CtcjJECPwvUoXA8kQB+F61G4HiRAFK5H4XoUJECamZmZmRkkQKRwPQrXIyRAj8L1KFwPJECamZmZmRkkQB+F61G4HiRAFK5H4XoUJECamZmZmRkkQA=="},"type":"histogram","xaxis":"x","yaxis":"y"},{"mode":"markers","name":"Data","showlegend":false,"x":{"dtype":"f8","bdata":"pHkQFM5+AMDmq4cJZCj8v1Tz2p8eCfm\u002fyAccPbem9r\u002f+JTiJVK\u002f0vyjR2PRC\u002ffK\u002f+rV4kNh78b9qrgXLdB7wv3esPG2Lue2\u002f9a0FCf9h67\u002fpqiXG1S3pv61Coea1Fue\u002f2TF5I7MX5b8Qvcgd5Czjv7MGG8kbU+G\u002f+kvnGHIP378r+v07CZHbv9keIYowJ9i\u002f17+L9pjO1L9Dby\u002fuVITRv9QEUkaFi8y\u002feIhiifUgxr9kp+WECYm\u002fvzKZvCP847K\u002fjiP7Ecgqmb9mI\u002fsRyCqZPzKZvCP847I\u002fbqflhAmJvz94iGKJ9SDGP9QEUkaFi8w\u002fQG8v7lSE0T\u002fXv4v2mM7UP9seIYowJ9g\u002fKfr9OwmR2z\u002f6S+cYcg\u002ffP7UGG8kbU+E\u002fEL3IHeQs4z\u002fZMXkjsxflP6xCoea1Fuc\u002f6aolxtUt6T\u002f1rQUJ\u002f2HrP3esPG2Lue0\u002faq4Fy3Qe8D\u002f8tXiQ2HvxPyjR2PRC\u002ffI\u002f\u002fiU4iVSv9D\u002fGBxw9t6b2P1Pz2p8eCfk\u002f6KuHCWQo\u002fD+keRAUzn4AQA=="},"y":{"dtype":"f8","bdata":"CtejcD0KJEAK16NwPQokQArXo3A9CiRACtejcD0KJECPwvUoXA8kQI\u002fC9ShcDyRAj8L1KFwPJECPwvUoXA8kQI\u002fC9ShcDyRAj8L1KFwPJECPwvUoXA8kQBSuR+F6FCRAFK5H4XoUJEAUrkfhehQkQBSuR+F6FCRAFK5H4XoUJEAUrkfhehQkQBSuR+F6FCRAFK5H4XoUJECamZmZmRkkQJqZmZmZGSRAmpmZmZkZJECamZmZmRkkQJqZmZmZGSRAmpmZmZkZJECamZmZmRkkQJqZmZmZGSRAmpmZmZkZJECamZmZmRkkQJqZmZmZGSRAmpmZmZkZJEAfhetRuB4kQB+F61G4HiRAH4XrUbgeJEAfhetRuB4kQB+F61G4HiRAH4XrUbgeJEAfhetRuB4kQB+F61G4HiRApHA9CtcjJECkcD0K1yMkQKRwPQrXIyRApHA9CtcjJECkcD0K1yMkQKRwPQrXIyRApHA9CtcjJEApXI\u002fC9SgkQClcj8L1KCRAKVyPwvUoJEApXI\u002fC9SgkQA=="},"type":"scatter","xaxis":"x2","yaxis":"y2"},{"line":{"color":"red","dash":"dash"},"mode":"lines","name":"Normal","showlegend":false,"x":{"dtype":"f8","bdata":"pHkQFM5+AMDmq4cJZCj8v1Tz2p8eCfm\u002fyAccPbem9r\u002f+JTiJVK\u002f0vyjR2PRC\u002ffK\u002f+rV4kNh78b9qrgXLdB7wv3esPG2Lue2\u002f9a0FCf9h67\u002fpqiXG1S3pv61Coea1Fue\u002f2TF5I7MX5b8Qvcgd5Czjv7MGG8kbU+G\u002f+kvnGHIP378r+v07CZHbv9keIYowJ9i\u002f17+L9pjO1L9Dby\u002fuVITRv9QEUkaFi8y\u002feIhiifUgxr9kp+WECYm\u002fvzKZvCP847K\u002fjiP7Ecgqmb9mI\u002fsRyCqZPzKZvCP847I\u002fbqflhAmJvz94iGKJ9SDGP9QEUkaFi8w\u002fQG8v7lSE0T\u002fXv4v2mM7UP9seIYowJ9g\u002fKfr9OwmR2z\u002f6S+cYcg\u002ffP7UGG8kbU+E\u002fEL3IHeQs4z\u002fZMXkjsxflP6xCoea1Fuc\u002f6aolxtUt6T\u002f1rQUJ\u002f2HrP3esPG2Lue0\u002faq4Fy3Qe8D\u002f8tXiQ2HvxPyjR2PRC\u002ffI\u002f\u002fiU4iVSv9D\u002fGBxw9t6b2P1Pz2p8eCfk\u002f6KuHCWQo\u002fD+keRAUzn4AQA=="},"y":{"dtype":"f8","bdata":"1d1klIAHJEANGWRIJwokQCGSdr3dCyRATIcXlywNJEC83667QA4kQJmHztkuDyRAutNeRwIQJECS9arxwRAkQNcDHmlyESRA73Sx2xYSJEAjqHqZsRIkQN6UZGBEEyRA8E0citATJECoNkspVxQkQDJD8xzZFCRAGnGzHVcVJEAAHyXH0RUkQGVgpZ5JFiRAX+teGL8WJEDKPB6bMhckQJuiS4OkFyRAUvZJJRUYJEBrO2bPhBgkQCAxeMvzGCRAGupLYGIZJEAaSefS0BkkQBQCu2c\u002fGiRAyffMY64aJEDiPOkNHhskQJmQ56+OGyRAavYUmAAcJEDVR9QadBwkQM\u002fSjZTpHCRANBQObGEdJEAawn8V3B0kQALwPxZaHiRAjPznCdweJEBE5RapYh8kQFaeztLuHyRAEYu4mYEgJEBFvoFXHCEkQF0vFcrAISRAoj2IQXEiJEB6X9TrMCMkQJurZFkEJCRAeFOEd\u002fIkJEDoqxucBiYkQBOhvHVVJyRAJxrP6gspJEBfVc6esiskQA=="},"type":"scatter","xaxis":"x2","yaxis":"y2"},{"mode":"markers+lines","name":"Measurements","showlegend":false,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50],"y":{"dtype":"f8","bdata":"mpmZmZkZJEApXI\u002fC9SgkQArXo3A9CiRAH4XrUbgeJEAUrkfhehQkQKRwPQrXIyRAj8L1KFwPJECamZmZmRkkQB+F61G4HiRAFK5H4XoUJEApXI\u002fC9SgkQArXo3A9CiRAmpmZmZkZJECkcD0K1yMkQI\u002fC9ShcDyRAH4XrUbgeJEAUrkfhehQkQJqZmZmZGSRApHA9CtcjJECPwvUoXA8kQJqZmZmZGSRAH4XrUbgeJEAUrkfhehQkQClcj8L1KCRACtejcD0KJECamZmZmRkkQKRwPQrXIyRAj8L1KFwPJEAfhetRuB4kQBSuR+F6FCRAmpmZmZkZJECkcD0K1yMkQI\u002fC9ShcDyRAmpmZmZkZJEAfhetRuB4kQBSuR+F6FCRAKVyPwvUoJEAK16NwPQokQJqZmZmZGSRApHA9CtcjJECPwvUoXA8kQB+F61G4HiRAFK5H4XoUJECamZmZmRkkQKRwPQrXIyRAj8L1KFwPJECamZmZmRkkQB+F61G4HiRAFK5H4XoUJECamZmZmRkkQA=="},"type":"scatter","xaxis":"x3","yaxis":"y3"},{"marker":{"color":["green","green","green","green"]},"name":"Indices","showlegend":false,"x":["Cp","Cpk","Pp","Ppk"],"y":[9.722222222222022,8.749999999999806,9.722222222222022,8.749999999999806],"type":"bar","xaxis":"x4","yaxis":"y4"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"anchor":"y","domain":[0.0,0.45]},"yaxis":{"anchor":"x","domain":[0.625,1.0]},"xaxis2":{"anchor":"y2","domain":[0.55,1.0]},"yaxis2":{"anchor":"x2","domain":[0.625,1.0]},"xaxis3":{"anchor":"y3","domain":[0.0,0.45]},"yaxis3":{"anchor":"x3","domain":[0.0,0.375]},"xaxis4":{"anchor":"y4","domain":[0.55,1.0]},"yaxis4":{"anchor":"x4","domain":[0.0,0.375]},"annotations":[{"font":{"size":16},"showarrow":false,"text":"Histogram with Spec Limits","x":0.225,"xanchor":"center","xref":"paper","y":1.0,"yanchor":"bottom","yref":"paper"},{"font":{"size":16},"showarrow":false,"text":"Normal Probability Plot","x":0.775,"xanchor":"center","xref":"paper","y":1.0,"yanchor":"bottom","yref":"paper"},{"font":{"size":16},"showarrow":false,"text":"Individual Values Chart","x":0.225,"xanchor":"center","xref":"paper","y":0.375,"yanchor":"bottom","yref":"paper"},{"font":{"size":16},"showarrow":false,"text":"Capability Indices","x":0.775,"xanchor":"center","xref":"paper","y":0.375,"yanchor":"bottom","yref":"paper"}],"shapes":[{"line":{"color":"red","dash":"dash"},"type":"line","x0":9.5,"x1":9.5,"xref":"x","y0":0,"y1":1,"yref":"y domain"},{"line":{"color":"red","dash":"dash"},"type":"line","x0":10.5,"x1":10.5,"xref":"x","y0":0,"y1":1,"yref":"y domain"},{"line":{"color":"blue"},"type":"line","x0":10.05,"x1":10.05,"xref":"x","y0":0,"y1":1,"yref":"y domain"},{"line":{"color":"red","dash":"dash"},"type":"line","x0":0,"x1":1,"xref":"x3 domain","y0":9.5,"y1":9.5,"yref":"y3"},{"line":{"color":"red","dash":"dash"},"type":"line","x0":0,"x1":1,"xref":"x3 domain","y0":10.5,"y1":10.5,"yref":"y3"},{"line":{"color":"blue"},"type":"line","x0":0,"x1":1,"xref":"x3 domain","y0":10.05,"y1":10.05,"yref":"y3"},{"line":{"color":"green","dash":"dash"},"type":"line","x0":0,"x1":1,"xref":"x4 domain","y0":1.33,"y1":1.33,"yref":"y4"},{"line":{"color":"orange","dash":"dash"},"type":"line","x0":0,"x1":1,"xref":"x4 domain","y0":1.0,"y1":1.0,"yref":"y4"}],"title":{"text":"Process Capability Analysis"},"height":800,"showlegend":false},                        {"responsive": true}                    )                };            </script>        </div>
+</body>
+</html>
+            </div>
+            
+            <div class="section">
+                <h2>Overall Assessment</h2>
+                <p>✓ Process is capable (Cpk=8.75) | ✓ Process performance is good (Ppk=8.75) | ✓ Excellent yield (100.00%) | ✓ Process is well centered</p>
+            </div>
+            
+            <div class="section">
+                <h3>Capability Criteria Guide</h3>
+                <ul>
+                    <li><strong class="excellent">Cp/Cpk ≥ 1.33:</strong> Excellent - Six Sigma capable</li>
+                    <li><strong class="adequate">Cp/Cpk ≥ 1.00:</strong> Adequate - Meets minimum requirements</li>
+                    <li><strong class="poor">Cp/Cpk < 1.00:</strong> Poor - Process needs improvement</li>
+                </ul>
+            </div>
+        </body>
+        </html>
+        

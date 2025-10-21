@@ -1,0 +1,21 @@
+# Core Data Science & Statistics
+pandas>=2.0.0
+numpy>=1.24.0
+plotly>=5.14.0
+scipy>=1.10.0
+
+# Environment & Configuration
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+
+# AI/LLM Framework
+langgraph>=0.2.0
+langchain-core>=0.3.0
+langchain-groq>=0.2.0
+
+# Web Framework & API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+requests>=2.31.0
+

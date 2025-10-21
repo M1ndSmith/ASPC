@@ -1,0 +1,38 @@
+# SPC & Quality Management System Configuration
+
+# LLM Provider Configuration
+llm:
+  provider: "groq"  # Options: groq, openai, anthropic, ollama, etc.
+  model: "llama-3.1-8b-instant"  # Model name for the provider
+  # Full model string will be: "provider:model" (e.g., "groq:llama-3.1-8b-instant")
+  
+  # Provider-specific models (examples):
+  # Groq: llama-3.1-8b-instant, llama-3.1-70b-versatile, mixtral-8x7b-32768
+  # OpenAI: gpt-4, gpt-4-turbo, gpt-3.5-turbo
+  # Anthropic: claude-3-opus, claude-3-sonnet, claude-3-haiku
+  # Ollama: llama2, mistral, codellama
+
+# Agent Configuration
+agents:
+  temperature: 0.0  # 0.0 = deterministic, 1.0 = creative
+  max_tokens: null  # null = provider default, or specify max tokens
+  timeout: 60  # Request timeout in seconds
+
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins: ["*"]  # List of allowed origins, or ["*"] for all
+  
+# File Upload Configuration
+uploads:
+  temp_directory: "temp_uploads"
+  max_file_size_mb: 10  # Maximum file size in MB
+  allowed_extensions: [".csv", ".xlsx", ".txt"]
+
+# Report Configuration
+reports:
+  auto_generate: true  # Auto-generate HTML reports
+  save_with_data: true  # Save reports in same folder as data
+  include_plots: true  # Include interactive plots in reports
+
