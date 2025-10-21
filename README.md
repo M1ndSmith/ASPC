@@ -11,14 +11,39 @@ Three main agents:
 - **MSA**: Validates your measurement system (Gage R&R, bias, linearity, stability)
 - **Capability**: Calculates Cp, Cpk, Pp, Ppk and tells you if your process can meet specs
 
+## Features
+
+### Statistical Process Control (SPC)
+
+- **Control Charts**: I-MR, Xbar-R, Xbar-S, P, NP, C, U charts
+- **Automatic Chart Selection** based on data characteristics
+- **Out-of-Control Detection** with statistical rules
+- **Data Quality Pre-checks** and validation
+- **Interactive Visualizations** with Plotly
+
+### Measurement System Analysis (MSA)
+
+- **Gage R&R Studies** (ANOVA method)
+- **Bias Studies** with statistical significance testing
+- **Linearity Studies** for measurement accuracy
+- **Stability Studies** for measurement consistency
+- **Comprehensive MSA Reports** 
+
+### Process Capability Analysis
+
+- **Capability Indices**: Cp, Cpk, Pp, Ppk, Cpm
+- **Normality Testing** (Anderson-Darling, Shapiro-Wilk, Kolmogorov-Smirnov)
+- **Process Centering Analysis**
+
+
 ## Quick Start
 
 ### Installation
 
 ```bash
 # Clone the repo
-git clone https://github.com/M1ndSmith/AI-powered-SPC-quality-management-system.git
-cd AI-powered-SPC-quality-management-system
+git clone https://github.com/M1ndSmith/SPC-AI.git
+cd SPC-AI
 
 # Create virtual environment
 python -m venv spc_env
@@ -227,6 +252,33 @@ measurement
 
 The agents are smart about column detection. If your columns are named differently, they'll figure it out.
 
+## Sample Data
+
+The system includes sample data for testing:
+
+### Control Charts
+
+- `spc_individual_in_control.csv` - Individual measurements (in-control)
+- `spc_individual_out_of_control.csv` - Individual measurements (out-of-control)
+- `spc_subgroup_data.csv` - Subgroup data for Xbar-R charts
+- `spc_np_chart_data.csv` - Attribute data for NP charts
+- `spc_c_chart_data.csv` - Defect count data for C charts
+
+### MSA Studies
+
+- `msa_gage_rr_excellent.csv` - Excellent Gage R&R study
+- `msa_gage_rr_poor.csv` - Poor Gage R&R study
+- `msa_bias_study.csv` - Bias study data
+- `msa_linearity_study.csv` - Linearity study data
+- `msa_stability_study.csv` - Stability study data
+
+### Process Capability
+
+- `capability_excellent.csv` - Excellent process capability
+- `capability_off_center.csv` - Off-center process
+- `capability_high_variation.csv` - High variation process
+- `capability_skewed_data.csv` - Non-normal data
+
 ## What You Get
 
 Each analysis generates:
@@ -251,8 +303,6 @@ Reports are saved to `temp_uploads/` directory.
 ├── process_capability_system/  # Capability agent
 ├── data_samples/          # Example datasets
 ├── spc_cli.py            # Command-line tool
-├── spc                    # CLI wrapper script
-└── tests/                 # Test suite
 ```
 
 ## Example Workflow
@@ -275,12 +325,22 @@ uvicorn api.main:app --host 0.0.0.0 --port 8000 &
 
 ### LLM Providers
 
-Tested with:
-- **Groq** (llama-3.1-8b-instant) - Free tier available, fast responses
-- **OpenAI** (gpt-4, gpt-3.5-turbo)
-- **Anthropic** (claude-3)
 
 Edit `agent_config/config.yaml` to switch providers. Add your API key to `.env` file.
+
+## Use Cases
+
+### Manufacturing
+
+- **Quality Control**: Monitor production processes with control charts
+- **Measurement Validation**: Ensure measurement systems are capable
+- **Process Improvement**: Assess and improve process capability
+
+### Research & Development
+
+- **Experimental Design**: Validate measurement systems before studies
+- **Data Quality**: Ensure data integrity and reliability
+- **Statistical Analysis**: Comprehensive SPC and capability analysis
 
 ### Conversation Memory
 
@@ -297,61 +357,6 @@ Agents remember context within a thread. This lets you have natural conversation
 # Agent provides recommendations based on full conversation
 ```
 
-## Testing
-
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage report
-pytest tests/ --cov=. --cov-report=html
-
-# Test CLI functionality
-python test_cli.py
-```
-
-## Performance
-
-Typical response times:
-- Simple queries: 1-5 seconds
-- Control chart analysis: 5-30 seconds  
-- Complex MSA/Capability: 30-60 seconds
-
-Response time depends on:
-- LLM provider speed (Groq is fastest)
-- Data size (keep under 1000 points for best performance)
-- Complexity of analysis
-
-## Known Issues
-
-- **First call is slower**: Model loading takes extra time (~5-10s)
-- **Large datasets**: Files with >1000 points may timeout - subsample your data
-- **Rate limits**: Groq free tier has limits - add 3-5 second delays between requests if needed
-- **Thread initialization**: Very first test after server start may need a retry
-
-These are minor and don't affect normal usage.
-
-## Requirements
-
-- Python 3.10+
-- Internet connection (for LLM API calls)
-- API key for your chosen LLM provider
-- 2GB RAM minimum
-
-## Troubleshooting
-
-**"API connection error"**
-- Check if server is running: `./spc health`
-- Restart server: `uvicorn api.main:app --reload`
-
-**"Request timed out"**
-- Use `--timeout 180` for complex analyses
-- Reduce data size if possible
-
-**"Rate limit exceeded"**
-- Add delays between requests
-- Upgrade your LLM provider plan
-- Switch to a different provider
 
 ## Why I Built This
 
@@ -368,17 +373,6 @@ The agents aren't perfect, but they're pretty good at:
 - Explaining results in plain language
 - Generating professional reports you can share
 
-Think of them as a junior quality engineer that works 24/7, never complains, and costs you nothing but an API key.
-
-## What's Next
-
-Possible improvements (contributions welcome):
-- Add CUSUM and EWMA charts
-- Support for multivariate SPC
-- Integration with data historians (OSIsoft PI, etc.)
-- Real-time monitoring mode
-- Email alerts for out-of-control conditions
-- Better visualization options
 
 ## Contributing
 
@@ -386,13 +380,10 @@ This is a working project, not perfectly polished. If you find bugs or have impr
 
 1. Open an issue describing the problem
 2. Fork and submit a PR
-3. Make sure tests pass: `pytest tests/`
 
 Code contributions, documentation improvements, and bug reports all welcome.
 
-## License
 
-MIT License - use it however you want.
 
 ## Credits
 
@@ -402,10 +393,5 @@ Built with:
 - Plotly for charts
 - scipy, numpy, pandas for statistics
 
-## Contact
-
-Issues and questions: Open a GitHub issue
-
----
 
 **Disclaimer:** This uses AI/LLMs for analysis. Always verify critical decisions with proper statistical software and domain expertise. The agents are tools to assist, not replace, quality engineering judgment. Don't bet your job on what an LLM tells you without checking it first.

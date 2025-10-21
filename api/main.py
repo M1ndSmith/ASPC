@@ -22,7 +22,7 @@ from process_capability_system.capability_agent import capability_graph
 app = FastAPI(
     title="SPC & Quality Management API",
     description="AI Quality Consultants for MSA, SPC, and Capability Analysis",
-    version="2.0.0"
+    version="1.0.0"
 )
 
 # CORS configuration
@@ -49,7 +49,7 @@ async def root():
     """API root endpoint"""
     return {
         "message": "SPC & Quality Management API",
-        "version": "2.0.0",
+        "version": "1.0.0",
         "endpoints": {
             "msa": "/chat/msa",
             "control_charts": "/chat/control-charts",
