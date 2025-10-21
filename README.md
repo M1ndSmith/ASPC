@@ -1,51 +1,67 @@
 # SPC Quality AI
 
-A quality management system for Statistical Process Control, MSA, and Process Capability analysis.
+A Quality Management System for **Statistical Process Control (SPC)**, **Measurement System Analysis (MSA)**, and **Process Capability** — powered by AI agents.
 
-## What This Does
+---
 
-This is a set of AI agents that help with quality engineering tasks. Instead of manually running statistical analyses, you can just upload your data and ask questions in plain English. The agents handle the math, generate charts, and explain what's going on with your process.
+## Overview
 
-Three main agents:
-- **Control Charts**: Monitors process stability, detects out-of-control conditions
-- **MSA**: Validates your measurement system (Gage R&R, bias, linearity, stability)
-- **Capability**: Calculates Cp, Cpk, Pp, Ppk and tells you if your process can meet specs
+Quality engineers spend too much time clicking through interfaces and manually interpreting charts.
+**SPC Quality AI** automates the tedious parts of quality analysis — just upload your data and ask questions in plain English.
+
+No more:
+
+* Guessing which control chart to use
+* Manually calculating control limits
+* Repeating the same MSA interpretations
+
+Instead, the AI agents handle:
+
+* Automatic detection of the correct chart type
+* Identification of out-of-control points
+* Plain-language interpretation of results
+* Professional report generation
+
+They’re not perfect, but they’re remarkably efficient assistants for modern quality engineers.
+
+---
 
 ## Features
 
-### Statistical Process Control (SPC)
+###  Statistical Process Control (SPC)
 
-- **Control Charts**: I-MR, Xbar-R, Xbar-S, P, NP, C, U charts
-- **Automatic Chart Selection** based on data characteristics
-- **Out-of-Control Detection** with statistical rules
-- **Data Quality Pre-checks** and validation
-- **Interactive Visualizations** with Plotly
+* **Control Charts:** I-MR, Xbar-R, Xbar-S, P, NP, C, and U charts
+* **Automatic Chart Selection** based on dataset characteristics
+* **Out-of-Control Detection** with statistical rules
+* **Data Quality Validation** before analysis
+* **Interactive Visualizations** via Plotly
 
-### Measurement System Analysis (MSA)
+###  Measurement System Analysis (MSA)
 
-- **Gage R&R Studies** (ANOVA method)
-- **Bias Studies** with statistical significance testing
-- **Linearity Studies** for measurement accuracy
-- **Stability Studies** for measurement consistency
-- **Comprehensive MSA Reports** 
+* **Gage R&R Studies** (ANOVA method)
+* **Bias Studies** with significance testing
+* **Linearity Studies** for accuracy verification
+* **Stability Studies** for long-term consistency
+* **Comprehensive MSA Reports** with interpretation
 
-### Process Capability Analysis
+###  Process Capability Analysis
 
-- **Capability Indices**: Cp, Cpk, Pp, Ppk, Cpm
-- **Normality Testing** (Anderson-Darling, Shapiro-Wilk, Kolmogorov-Smirnov)
-- **Process Centering Analysis**
+* **Capability Indices:** Cp, Cpk, Pp, Ppk, Cpm
+* **Normality Testing:** Anderson–Darling, Shapiro–Wilk, Kolmogorov–Smirnov
+* **Process Centering and Variation Analysis**
 
+---
 
 ## Quick Start
 
-### Installation
+### 1. Installation
 
 ```bash
-# Clone the repo
+# Clone the repository
 git clone https://github.com/M1ndSmith/SPC-AI.git
 cd SPC-AI
 
-# Create virtual environment
+# Create and activate virtual environment
 python -m venv spc_env
 source spc_env/bin/activate  # On Windows: spc_env\Scripts\activate
 
@@ -54,147 +70,155 @@ pip install -r requirements.txt
 
 # Set up your API key
 cp env.example .env
-# Edit .env and add your GROQ_API_KEY
+# Edit .env and add your GROQ_API_KEY (or key for your chosen LLM)
 ```
 
-### Configure LLM (Optional)
+### 2. Configure LLM (Optional)
 
-The system uses Groq by default (free tier available). To change:
+The system uses **Groq** by default (free tier available).
+To switch providers, edit `agent_config/config.yaml`:
 
-Edit `agent_config/config.yaml`:
 ```yaml
 llm:
-  provider: "groq"  # or "openai", "anthropic"
+  provider: "groq"        # or "openai", "anthropic"
   model: "llama-3.1-8b-instant"
 ```
 
-### Start the API Server
+### 3. Start the API Server
 
 ```bash
 uvicorn api.main:app --host 0.0.0.0 --port 8000
 ```
 
-Server runs at `http://localhost:8000`
+Server available at: [http://localhost:8000](http://localhost:8000)
+
+---
 
 ## Using the CLI
 
-The easiest way to interact with the agents. The `./spc` wrapper script automatically activates the virtual environment.
+The CLI (`./spc`) provides the easiest way to interact with the agents.
+It automatically activates the virtual environment.
 
 ### Basic Commands
 
 ```bash
-# Check if the API server is running
+# Check server health
 ./spc health
 
-# Run a control chart analysis
+# Run control chart analysis
 ./spc chat control-charts "Analyze this data" -f your_data.csv
 
-# MSA study
+# Run MSA study
 ./spc chat msa "Run a Gage R&R study" -f measurement_data.csv
 
-# Capability analysis
+# Run capability analysis
 ./spc chat capability "Calculate Cp and Cpk with USL=10.5, LSL=9.5" -f process_data.csv
 ```
 
 ### Available Agents
 
-- `control-charts` - Control chart analysis and SPC
-- `msa` - Measurement System Analysis
-- `capability` - Process Capability Analysis
+| Agent            | Purpose                        |
+| ---------------- | ------------------------------ |
+| `control-charts` | Control chart and SPC analysis |
+| `msa`            | Measurement System Analysis    |
+| `capability`     | Process Capability Analysis    |
 
 ### CLI Options
 
-| Option | Short | Description | Default |
-|--------|-------|-------------|---------|
-| `--file` | `-f` | CSV file to upload | None |
-| `--thread-id` | `-t` | Thread ID for conversation continuity | `cli_session` |
-| `--user-id` | `-u` | User ID for tracking | `cli_user` |
-| `--timeout` | | Request timeout in seconds | 120 |
-| `--verbose` | `-v` | Show verbose output with metadata | False |
-| `--output` | `-o` | Save response to JSON file | None |
-| `--url` | | API base URL | `http://localhost:8000` |
+| Option        | Short | Description                  | Default                 |
+| ------------- | ----- | ---------------------------- | ----------------------- |
+| `--file`      | `-f`  | CSV file to upload           | None                    |
+| `--thread-id` | `-t`  | Conversation thread ID       | `cli_session`           |
+| `--user-id`   | `-u`  | User identifier              | `cli_user`              |
+| `--timeout`   |       | Request timeout (seconds)    | 120                     |
+| `--verbose`   | `-v`  | Verbose output with metadata | False                   |
+| `--output`    | `-o`  | Save response to JSON file   | None                    |
+| `--url`       |       | API base URL                 | `http://localhost:8000` |
+
+---
 
 ### CLI Examples
 
-**Control Charts Analysis:**
+**Control Charts**
+
 ```bash
 # Basic analysis
 ./spc chat control-charts "Analyze this data" -f data.csv
 
-# With verbose output
+# Verbose output
 ./spc chat control-charts "Check for out-of-control points" -f data.csv -v
 
-# Save response to file
+# Save results
 ./spc chat control-charts "Generate full report" -f data.csv -o report.json
 ```
 
-**MSA - Gage R&R:**
+**MSA Example**
+
 ```bash
 ./spc chat msa "Conduct a Gage R&R study" -f gage_data.csv
 ```
 
-**Capability Analysis:**
+**Capability Example**
+
 ```bash
 ./spc chat capability "Assess capability with USL=10.5, LSL=9.5, target=10.0" -f process_data.csv
 ```
 
-**Conversational Follow-ups:**
-
-Use the same thread ID to maintain conversation context:
+**Conversational Threads**
 
 ```bash
-# First message
+# Initial message
 ./spc chat control-charts "Analyze this data" -f data.csv -t analysis_001
 
-# Follow-up questions (same thread)
+# Follow-up queries using same thread
 ./spc chat control-charts "What are the main issues?" -t analysis_001
 ./spc chat control-charts "Give me recommendations" -t analysis_001
 ```
 
-### Advanced CLI Usage
+**Advanced Usage**
 
-**Custom API URL:**
+Custom API URL:
+
 ```bash
 ./spc --url http://remote-server:8000 chat msa "Run study" -f data.csv
 ```
 
-**Extended Timeout for Large Datasets:**
+Extended Timeout:
+
 ```bash
-./spc chat control-charts "Analyze complex data" -f large_file.csv --timeout 300
+./spc chat control-charts "Analyze large dataset" -f big.csv --timeout 300
 ```
 
-**Batch Processing:**
+Batch Automation:
+
 ```bash
 #!/bin/bash
 for file in data/*.csv; do
-    echo "Processing $file..."
-    ./spc chat control-charts "Analyze and report" -f "$file" -t batch_$(date +%Y%m%d)
+  echo "Processing $file..."
+  ./spc chat control-charts "Analyze and report" -f "$file" -t batch_$(date +%Y%m%d)
 done
 ```
 
+---
+
 ## API Usage
 
-If you prefer to use the API directly:
+You can also call the API directly.
 
-### Python
+### Python Example
 
 ```python
 import requests
 
 response = requests.post(
     "http://localhost:8000/chat/control-charts",
-    data={
-        "message": "Analyze this data for control charts",
-        "thread_id": "my_session",
-        "user_id": "engineer1"
-    },
+    data={"message": "Analyze this data", "thread_id": "my_session", "user_id": "engineer1"},
     files={"file": open("data.csv", "rb")}
 )
-
 print(response.json()["response"])
 ```
 
-### curl
+### curl Example
 
 ```bash
 curl -X POST http://localhost:8000/chat/control-charts \
@@ -204,17 +228,23 @@ curl -X POST http://localhost:8000/chat/control-charts \
   -F "file=@data.csv"
 ```
 
-### API Endpoints
+### Endpoints
 
-- `GET /` - API info and available endpoints
-- `GET /health` - Health check
-- `POST /chat/{agent_id}` - Chat with an agent (agent_id: control-charts, msa, capability)
+| Method | Endpoint           | Description                                                |
+| ------ | ------------------ | ---------------------------------------------------------- |
+| `GET`  | `/`                | API overview                                               |
+| `GET`  | `/health`          | Health check                                               |
+| `POST` | `/chat/{agent_id}` | Chat with an agent (`control-charts`, `msa`, `capability`) |
+
+---
 
 ## Data Format
 
-Your CSV should have columns for measurements. The agents will auto-detect most things, but you can be explicit:
+Each CSV should include the relevant measurement columns.
+The system will auto-detect column roles but supports explicit naming.
 
-**Control Charts:**
+**Control Charts**
+
 ```csv
 date,measurement
 2024-01-01,10.2
@@ -222,7 +252,8 @@ date,measurement
 2024-01-03,9.9
 ```
 
-For subgroup data:
+**Subgroup Data**
+
 ```csv
 subgroup,measurement
 1,10.2
@@ -232,7 +263,8 @@ subgroup,measurement
 2,10.3
 ```
 
-**MSA (Gage R&R):**
+**MSA (Gage R&R)**
+
 ```csv
 Part,Operator,Measurement,Trial
 1,A,10.2,1
@@ -241,7 +273,8 @@ Part,Operator,Measurement,Trial
 1,B,10.2,2
 ```
 
-**Capability:**
+**Process Capability**
+
 ```csv
 measurement
 10.2
@@ -250,60 +283,67 @@ measurement
 10.0
 ```
 
-The agents are smart about column detection. If your columns are named differently, they'll figure it out.
+The system is tolerant of alternative column names and will infer structure automatically.
+
+---
 
 ## Sample Data
 
-The system includes sample data for testing:
-
 ### Control Charts
 
-- `spc_individual_in_control.csv` - Individual measurements (in-control)
-- `spc_individual_out_of_control.csv` - Individual measurements (out-of-control)
-- `spc_subgroup_data.csv` - Subgroup data for Xbar-R charts
-- `spc_np_chart_data.csv` - Attribute data for NP charts
-- `spc_c_chart_data.csv` - Defect count data for C charts
+* `spc_individual_in_control.csv`
+* `spc_individual_out_of_control.csv`
+* `spc_subgroup_data.csv`
+* `spc_np_chart_data.csv`
+* `spc_c_chart_data.csv`
 
 ### MSA Studies
 
-- `msa_gage_rr_excellent.csv` - Excellent Gage R&R study
-- `msa_gage_rr_poor.csv` - Poor Gage R&R study
-- `msa_bias_study.csv` - Bias study data
-- `msa_linearity_study.csv` - Linearity study data
-- `msa_stability_study.csv` - Stability study data
+* `msa_gage_rr_excellent.csv`
+* `msa_gage_rr_poor.csv`
+* `msa_bias_study.csv`
+* `msa_linearity_study.csv`
+* `msa_stability_study.csv`
 
 ### Process Capability
 
-- `capability_excellent.csv` - Excellent process capability
-- `capability_off_center.csv` - Off-center process
-- `capability_high_variation.csv` - High variation process
-- `capability_skewed_data.csv` - Non-normal data
+* `capability_excellent.csv`
+* `capability_off_center.csv`
+* `capability_high_variation.csv`
+* `capability_skewed_data.csv`
 
-## What You Get
+---
 
-Each analysis generates:
-- Detailed statistical results
-- HTML report with charts
-- Recommendations in plain English
-- Out-of-control point detection (for control charts)
-- Acceptance criteria (for MSA)
-- Process capability indices (Cp, Cpk, Pp, Ppk)
+## Output
 
-Reports are saved to `temp_uploads/` directory.
+Each analysis produces:
+
+* Detailed statistical summaries
+* HTML report with charts
+* Plain-language recommendations
+* Out-of-control detection (SPC)
+* Acceptance criteria (MSA)
+* Capability indices (Cp, Cpk, Pp, Ppk)
+
+Reports are stored in `temp_uploads/`.
+
+---
 
 ## Project Structure
 
 ```
-├── agent_config/          # LLM and agent configuration
-│   ├── config.yaml        # LLM settings
-│   └── agent_prompts/     # Agent prompts
-├── api/                   # FastAPI server
-├── control_chart_system/  # Control charts agent
-├── msa_system/            # MSA agent
-├── process_capability_system/  # Capability agent
-├── data_samples/          # Example datasets
-├── spc_cli.py            # Command-line tool
+├── agent_config/               # LLM and agent settings
+│   ├── config.yaml             # Model provider config
+│   └── agent_prompts/          # Agent prompt templates
+├── api/                        # FastAPI server
+├── control_chart_system/       # SPC logic
+├── msa_system/                 # MSA logic
+├── process_capability_system/  # Capability analysis logic
+├── data_samples/               # Example datasets
+├── spc_cli.py                  # Command-line tool
 ```
+
+---
 
 ## Example Workflow
 
@@ -311,87 +351,70 @@ Reports are saved to `temp_uploads/` directory.
 # 1. Start the server
 uvicorn api.main:app --host 0.0.0.0 --port 8000 &
 
-# 2. Validate your measurement system
+# 2. Validate measurement system
 ./spc chat msa "Conduct Gage R&R study" -f gage_data.csv
 
-# 3. If MSA is good, monitor process with control charts
+# 3. If MSA passes, monitor process
 ./spc chat control-charts "Check process stability" -f process_data.csv
 
-# 4. If process is stable, assess capability
-./spc chat capability "Calculate capability indices with USL=10.5, LSL=9.5" -f process_data.csv
+# 4. If process is stable, check capability
+./spc chat capability "Calculate Cp and Cpk with USL=10.5, LSL=9.5" -f process_data.csv
 ```
 
-## Configuration
-
-### LLM Providers
-
-
-Edit `agent_config/config.yaml` to switch providers. Add your API key to `.env` file.
+---
 
 ## Use Cases
 
 ### Manufacturing
 
-- **Quality Control**: Monitor production processes with control charts
-- **Measurement Validation**: Ensure measurement systems are capable
-- **Process Improvement**: Assess and improve process capability
+* Monitor process stability using control charts
+* Validate measurement systems for precision
+* Assess process capability for continuous improvement
 
 ### Research & Development
 
-- **Experimental Design**: Validate measurement systems before studies
-- **Data Quality**: Ensure data integrity and reliability
-- **Statistical Analysis**: Comprehensive SPC and capability analysis
+* Verify measurement reliability before experiments
+* Ensure data integrity in prototypes or trials
+* Automate statistical exploration of test results
 
-### Conversation Memory
+---
 
-Agents remember context within a thread. This lets you have natural conversations:
+## Conversation Memory
+
+Agents retain context within a session (`--thread-id`), allowing natural multi-step discussions:
 
 ```bash
 ./spc chat control-charts "Analyze this" -f data.csv -t project_001
-# Agent analyzes and responds
-
-./spc chat control-charts "What caused those out-of-control points?" -t project_001
-# Agent remembers previous analysis
-
-./spc chat control-charts "Should I investigate this further?" -t project_001
-# Agent provides recommendations based on full conversation
+./spc chat control-charts "Explain those out-of-control points" -t project_001
+./spc chat control-charts "Give improvement suggestions" -t project_001
 ```
 
-
-## Why I Built This
-
-Quality engineers spend too much time clicking through software and manually interpreting charts. I got tired of it. 
-
-This automates the tedious parts:
-- No more guessing which control chart to use
-- No more manual calculation of control limits
-- No more writing the same MSA interpretations over and over
-
-The agents aren't perfect, but they're pretty good at:
-- Detecting which chart type you need
-- Finding out-of-control points
-- Explaining results in plain language
-- Generating professional reports you can share
-
+---
 
 ## Contributing
 
-This is a working project, not perfectly polished. If you find bugs or have improvements:
+This is a **work in progress** project.
+Contributions are welcome — code, documentation, or ideas.
 
-1. Open an issue describing the problem
-2. Fork and submit a PR
+1. Open an issue describing your suggestion or bug
+2. Fork and submit a pull request
 
-Code contributions, documentation improvements, and bug reports all welcome.
-
-
+---
 
 ## Credits
 
 Built with:
-- LangGraph for agent orchestration
-- FastAPI for the API
-- Plotly for charts
-- scipy, numpy, pandas for statistics
+
+* **LangGraph** — Agent orchestration
+* **FastAPI** — REST API
+* **Plotly** — Visualization
+* **scipy**, **numpy**, **pandas** — Statistical backbone
+
+---
+
+**Disclaimer:**
+This tool uses AI (LLMs) for statistical interpretation.
+Always verify results with standard software and domain expertise before making decisions.
+The AI assists quality engineers — it doesn’t replace them.
 
 
-**Disclaimer:** This uses AI/LLMs for analysis. Always verify critical decisions with proper statistical software and domain expertise. The agents are tools to assist, not replace, quality engineering judgment. Don't bet your job on what an LLM tells you without checking it first.
