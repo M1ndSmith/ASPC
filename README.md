@@ -1,6 +1,6 @@
 # SPC Quality AI
 
-AI-powered quality management system for Statistical Process Control, MSA, and Process Capability analysis.
+A quality management system for Statistical Process Control, MSA, and Process Capability analysis.
 
 ## What This Does
 
