@@ -9,9 +9,9 @@ python-dotenv>=1.0.0
 pyyaml>=6.0.0
 
 # AI/LLM Framework
-langgraph>=0.2.0
-langchain-core>=0.3.0
-langchain-groq>=0.2.0
+langgraph
+langchain
+langchain-groq
 
 # Web Framework & API
 fastapi>=0.104.0

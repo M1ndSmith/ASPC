@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import json
 from typing import Optional
-from langchain_core.tools import tool
+from langchain.tools import tool
 from .control_chart_pipeline import ControlChartPipeline
 
 

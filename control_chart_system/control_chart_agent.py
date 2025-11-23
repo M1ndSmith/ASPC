@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.store.memory import InMemoryStore
 
@@ -20,12 +20,13 @@ checkpointer = InMemorySaver()
 store = InMemoryStore()
 
 # Create the agent graph (exported for use in API)
-control_chart_graph = create_react_agent(
+control_chart_graph = create_agent(
     model=get_llm_model_string(),  # Load from config.yaml
     tools=[run_control_chart_analysis],  # Single comprehensive tool
     checkpointer=checkpointer,
     store=store,
-    prompt=Control_chart_agent,
+    system_prompt=Control_chart_agent,
     name="control charts ai generator",
+    
 )
 

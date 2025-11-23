@@ -6,11 +6,11 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Activate the virtual environment
-if [ -f "$SCRIPT_DIR/spcvenv/bin/activate" ]; then
-    source "$SCRIPT_DIR/spcvenv/bin/activate"
+if [ -f "$SCRIPT_DIR/aspcvenv/bin/activate" ]; then
+    source "$SCRIPT_DIR/aspcvenv/bin/activate"
 else
-    echo "Error: Virtual environment not found at $SCRIPT_DIR/spcvenv"
-    echo "Please ensure the spcvenv virtual environment is properly set up."
+    echo "Error: Virtual environment not found at $SCRIPT_DIR/aspcvenv"
+    echo "Please ensure the aspcvenv virtual environment is properly set up."
     exit 1
 fi
 
