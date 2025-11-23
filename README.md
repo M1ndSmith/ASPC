@@ -400,6 +400,8 @@ Agents retain context within a session (`--thread-id`), allowing natural multi-s
 <img width="874" height="819" alt="capability analysis" src="https://github.com/user-attachments/assets/b3d2545f-fc40-4ae5-80e8-1244b58b0f8e" />
 
 
+**agent chat**
+<img width="1902" height="395" alt="agent_chat" src="https://github.com/user-attachments/assets/8ef8ee78-208e-46cb-bcad-fb409d834a90" />
 
 ---
 ## Contributing
