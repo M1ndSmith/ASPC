@@ -392,11 +392,11 @@ Agents retain context within a session (`--thread-id`), allowing natural multi-s
 ---
 
 ## Reports example
-**control charts**
+
 <img width="877" height="771" alt="control_chart" src="https://github.com/user-attachments/assets/2f5409b3-1830-44e5-8d86-61fb2ef87c21" />
-**msa analysis**
+
 <img width="877" height="771" alt="msa_report" src="https://github.com/user-attachments/assets/898717fc-04ae-48d0-87a0-d5772a44a21c" />
-**capability analysis**
+
 <img width="874" height="819" alt="capability analysis" src="https://github.com/user-attachments/assets/b3d2545f-fc40-4ae5-80e8-1244b58b0f8e" />
 
 
