@@ -63,7 +63,7 @@ cd ASPC
 
 # Create and activate virtual environment
 python -m venv aspcvenv
-source aspcvenv/bin/activate  # On Windows: spc_env\Scripts\activate
+source aspcvenv/bin/activate  # On Windows: aspcvenv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
