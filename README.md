@@ -1,13 +1,13 @@
-# SPC Quality AI
+# Agentic tool for statistical process control
 
-A Quality Management System for **Statistical Process Control (SPC)**, **Measurement System Analysis (MSA)**, and **Process Capability** — powered by AI agents.
+A Quality Management System for **Statistical Process Control (SPC)**, **Measurement System Analysis (MSA)**, and **Process Capability** — powered by agents.
 
 ---
 
 ## Overview
 
 Quality engineers spend too much time clicking through interfaces and manually interpreting charts.
-**SPC Quality AI** automates the tedious parts of quality analysis — just upload your data and ask questions in plain English.
+**SPC Quality AI** automates the tedious parts of quality analysis just upload your data and ask questions in plain English.
 
 No more:
 
@@ -58,12 +58,12 @@ They’re not perfect, but they’re remarkably efficient assistants for modern 
 
 ```bash
 # Clone the repository
-git clone https://github.com/M1ndSmith/SPC-AI.git
-cd SPC-AI
+git clone https://github.com/M1ndSmith/ASPC.git
+cd ASPC
 
 # Create and activate virtual environment
-python -m venv spc_env
-source spc_env/bin/activate  # On Windows: spc_env\Scripts\activate
+python -m venv aspcvenv
+source aspcvenv/bin/activate  # On Windows: spc_env\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -391,10 +391,21 @@ Agents retain context within a session (`--thread-id`), allowing natural multi-s
 
 ---
 
+## Reports example
+**control charts**
+<img width="877" height="771" alt="control_chart" src="https://github.com/user-attachments/assets/2f5409b3-1830-44e5-8d86-61fb2ef87c21" />
+**msa analysis**
+<img width="877" height="771" alt="msa_report" src="https://github.com/user-attachments/assets/898717fc-04ae-48d0-87a0-d5772a44a21c" />
+**capability analysis**
+<img width="874" height="819" alt="capability analysis" src="https://github.com/user-attachments/assets/b3d2545f-fc40-4ae5-80e8-1244b58b0f8e" />
+
+
+
+---
 ## Contributing
 
 This is a **work in progress** project.
-Contributions are welcome — code, documentation, or ideas.
+Contributions are welcome code, documentation, or any ideas.
 
 1. Open an issue describing your suggestion or bug
 2. Fork and submit a pull request
@@ -405,7 +416,7 @@ Contributions are welcome — code, documentation, or ideas.
 
 Built with:
 
-* **LangGraph** — Agent orchestration
+* **Langchain** — Prebuilt agents
 * **FastAPI** — REST API
 * **Plotly** — Visualization
 * **scipy**, **numpy**, **pandas** — Statistical backbone
