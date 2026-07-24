@@ -166,7 +166,6 @@ tmp/
 logs/
 
 # Data files (uncomment if you don't want to track data)
-# data_samples/
 # *.csv
 
 # API keys and secrets
@@ -174,3 +173,14 @@ logs/
 .env.production
 secrets.json
 config.json
+# ASPC v2 runtime artifacts
+aspc.db
+*.db-journal
+var/uploads/
+var/reports/
+examples/data/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+deploy/compose/data/
+*.parquet

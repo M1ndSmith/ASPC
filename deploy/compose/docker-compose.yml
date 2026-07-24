@@ -1,0 +1,140 @@
+# ASPC production stack — Redpanda, Mosquitto, TimescaleDB, Redis, API, stream engine, frontend.
+# Usage: docker compose -f deploy/compose/docker-compose.yml up -d
+
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - 512M
+      - --reserve-memory
+      - 0M
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
+      - --advertise-kafka-addr
+      - INTERNAL://redpanda:9092,EXTERNAL://localhost:19092
+    ports:
+      - "19092:19092"
+      - "9644:9644"
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    ports:
+      - "1883:1883"
+    volumes:
+      - ../mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: aspc
+      POSTGRES_PASSWORD: aspc
+      POSTGRES_DB: aspc
+    ports:
+      - "5433:5432"
+    volumes:
+      - tsdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aspc -d aspc"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.api
+    environment:
+      ASPC_PERSISTENCE_BACKEND: timescale
+      ASPC_TIMESCALE_DSN: postgresql+asyncpg://aspc:aspc@timescaledb:5432/aspc
+      ASPC_REDIS_URL: redis://redis:6379/0
+      ASPC_KAFKA_BOOTSTRAP: redpanda:9092
+      ASPC_JWT_SECRET: change-me-in-production
+      ASPC_API_KEYS: demokey
+      ASPC_CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  stream-engine:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.stream_engine
+    environment:
+      ASPC_TIMESCALE_DSN: postgresql+asyncpg://aspc:aspc@timescaledb:5432/aspc
+      ASPC_REDIS_URL: redis://redis:6379/0
+      ASPC_KAFKA_BOOTSTRAP: redpanda:9092
+      ASPC_KAFKA_TOPIC: spc.measurements
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  mqtt-bridge:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.mqtt_bridge
+    environment:
+      ASPC_MQTT_HOST: mosquitto
+      ASPC_MQTT_PORT: "1883"
+      ASPC_MQTT_TOPIC: sensors/#
+      ASPC_KAFKA_BOOTSTRAP: redpanda:9092
+      ASPC_KAFKA_TOPIC: spc.measurements
+    depends_on:
+      - mosquitto
+      - redpanda
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_WS_URL: ws://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    profiles: ["ops"]
+    ports:
+      - "3001:3000"
+    volumes:
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - timescaledb
+
+volumes:
+  tsdata:

@@ -1,0 +1,128 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aspc"
+version = "2.0.0"
+description = "ASPC - production Statistical Process Control platform: correct core, streaming, TimescaleDB, Next.js dashboard."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "ASPC" }]
+keywords = ["spc", "statistical-process-control", "msa", "gage-rr", "capability", "quality"]
+
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pydantic>=2.5",
+]
+
+[project.optional-dependencies]
+data = [
+    "polars>=0.20",
+]
+render = [
+    "plotly>=5.18",
+]
+apps = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "python-multipart>=0.0.9",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "python-jose[cryptography]>=3.3",
+    "passlib[bcrypt]>=1.7",
+    "slowapi>=0.1.9",
+    "structlog>=24.1",
+    "prometheus-client>=0.20",
+    "redis>=5.0",
+]
+stream = [
+    "aiokafka>=0.10",
+    "aiomqtt>=2.0",
+]
+tsdb = [
+    "sqlalchemy[asyncio]>=2.0",
+    "alembic>=1.13",
+    "asyncpg>=0.29",
+    "psycopg[binary]>=3.1",
+    "greenlet>=3.0",
+]
+dev = [
+    "polars>=0.20",
+    "plotly>=5.18",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "python-multipart>=0.0.9",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "python-jose[cryptography]>=3.3",
+    "passlib[bcrypt]>=1.7",
+    "slowapi>=0.1.9",
+    "structlog>=24.1",
+    "prometheus-client>=0.20",
+    "redis>=5.0",
+    "aiokafka>=0.10",
+    "aiomqtt>=2.0",
+    "sqlalchemy[asyncio]>=2.0",
+    "alembic>=1.13",
+    "asyncpg>=0.29",
+    "psycopg[binary]>=3.1",
+    "greenlet>=3.0",
+    "pytest>=7.4",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "hypothesis>=6.98",
+    "ruff>=0.4",
+    "mypy>=1.9",
+]
+all = [
+    "aspc[data,render,apps,stream,tsdb]",
+]
+
+[project.scripts]
+aspc = "apps.cli.main:main"
+aspc-api = "apps.api.main:run"
+aspc-stream-engine = "services.stream_engine.main:main"
+aspc-mqtt-bridge = "services.mqtt_bridge.main:main"
+
+[tool.setuptools]
+packages = [
+    "spc_core",
+    "adapters",
+    "apps",
+    "apps.api",
+    "apps.cli",
+    "services",
+    "services.stream_engine",
+    "services.mqtt_bridge",
+    "sample_data",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "auto"
+addopts = "-q -p no:launch_testing -p no:launch_testing_ros -p no:launch_testing_ros_pytest_entrypoint"
+filterwarnings = [
+    "ignore::FutureWarning:scipy.*",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_return_any = false
+warn_unused_ignores = true
+check_untyped_defs = true
+packages = ["spc_core", "adapters", "apps"]

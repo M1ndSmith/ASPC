@@ -1,0 +1,41 @@
+# ASPC application configuration
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins: ["*"]
+
+auth:
+  enabled: true
+  jwt_secret: "change-me-in-production"
+  jwt_algorithm: "HS256"
+  jwt_expire_minutes: 60
+  admin_password: "admin"
+  api_keys: []
+
+uploads:
+  temp_directory: "var/uploads"
+  max_file_size_mb: 10
+  allowed_extensions: [".csv", ".parquet", ".pq"]
+
+reports:
+  auto_generate: true
+  output_directory: "var/reports"
+  include_plots: true
+
+persistence:
+  backend: "sqlite"
+  sqlite_path: "aspc.db"
+  timescale_dsn: null
+
+redis:
+  url: "redis://localhost:6379/0"
+
+kafka:
+  bootstrap: "localhost:9092"
+  topic: "spc.measurements"
+
+spc:
+  ruleset: "nelson"
+  min_phase1_points: 25
+  acf_threshold: 0.2

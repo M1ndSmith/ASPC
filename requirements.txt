@@ -1,21 +1,19 @@
-# Core Data Science & Statistics
-pandas>=2.0.0
-numpy>=1.24.0
-plotly>=5.14.0
-scipy>=1.10.0
+# ASPC v2 dependencies
+# Prefer: uv pip install -e ".[dev]"
+# This file is kept for backwards-compatible installs.
 
-# Environment & Configuration
-python-dotenv>=1.0.0
-pyyaml>=6.0.0
+numpy>=1.26
+scipy>=1.11
+pydantic>=2.5
+python-dotenv>=1.0
+pyyaml>=6.0
 
-# AI/LLM Framework
-langgraph
-langchain
-langchain-groq
-
-# Web Framework & API
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-python-multipart>=0.0.6
-requests>=2.31.0
-
+# Optional (also available via extras in pyproject.toml)
+# polars>=0.20
+# plotly>=5.18
+# fastapi>=0.110
+# uvicorn[standard]>=0.27
+# python-multipart>=0.0.9
+# pytest>=7.4
+# httpx>=0.27
+# requests>=2.31
