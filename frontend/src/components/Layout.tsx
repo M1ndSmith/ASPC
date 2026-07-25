@@ -22,8 +22,12 @@ export function Layout({ children }: { children: ReactNode }) {
   const isLogin = pathname === "/login";
 
   useEffect(() => {
-    setAuthed(!!getToken());
-  }, [pathname]);
+    const token = getToken();
+    setAuthed(!!token);
+    if (!token && !isLogin) {
+      router.replace("/login");
+    }
+  }, [pathname, isLogin, router]);
 
   if (isLogin) {
     return <>{children}</>;

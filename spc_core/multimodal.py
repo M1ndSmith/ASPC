@@ -64,7 +64,7 @@ def check_multimodal(values, alpha: float = 0.05) -> MultimodalResult:
         )
 
     try:
-        from diptest import diptest as _diptest  # type: ignore
+        from diptest import diptest as _diptest
 
         dip, p, _ = _diptest(arr, is_data_sorted=False)
         dip, p = float(dip), float(p)

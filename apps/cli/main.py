@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from pathlib import Path
 
 from adapters.io_files import FileReadError, load_columns
 from adapters.persistence import SQLiteRepository
@@ -17,10 +16,8 @@ from adapters.render_plotly import (
 from apps.config import get_config
 from spc_core import (
     ChartType,
-    analyze_control_chart,
     bias_study,
     capability_analysis,
-    check_autocorrelation,
     check_normality,
     gage_rr_anova,
     gage_rr_range,
@@ -84,6 +81,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "serve":
         import uvicorn
+
         from apps.api.main import app
         uvicorn.run(
             app,

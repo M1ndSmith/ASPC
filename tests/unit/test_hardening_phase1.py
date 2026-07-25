@@ -7,7 +7,6 @@ import pytest
 from spc_core.charts import analyze_control_chart
 from spc_core.evaluator import Phase2Evaluator
 from spc_core.ewma import ewma_chart
-from spc_core.limits import xbar_r_limits, build_subgroups
 from spc_core.models import ChartType, ControlLimits
 from spc_core.msa import gage_rr_anova
 from spc_core.pipeline import establish, phase1_checklist

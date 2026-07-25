@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
-from typing import Optional
 
 from .models import Signal
 
@@ -200,7 +199,7 @@ class RuleEngine:
             return False
         return all(p.zone >= zone_ge for p in b[-length:])
 
-    def _sig(self, rule_id: str, pt: _Pt, side: Optional[str] = None, catalog=None) -> Signal:
+    def _sig(self, rule_id: str, pt: _Pt, side: str | None = None, catalog=None) -> Signal:
         catalog = catalog or NELSON
         name, _, desc = catalog[rule_id]
         return Signal(rule_id=rule_id, rule_name=name, index=pt.index,

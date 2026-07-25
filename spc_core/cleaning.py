@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Optional
 
 from .models import QualityFlag
 
@@ -26,7 +25,7 @@ _REASON_TO_FLAG = {
 
 @dataclass
 class CleaningResult:
-    values: list[Optional[float]]        # cleaned values (LOCF may fill a few points)
+    values: list[float | None]        # cleaned values (LOCF may fill a few points)
     flags: list[QualityFlag]
     usable: list[bool]                   # True if the point may enter control-chart math
     notes: dict = field(default_factory=dict)
@@ -51,7 +50,7 @@ def range_check(values, low: float, high: float) -> list[bool]:
     return out
 
 
-def classify_missing(values, reasons: Optional[list[Optional[str]]] = None,
+def classify_missing(values, reasons: list[str | None] | None = None,
                      locf_max: int = 3) -> CleaningResult:
     """Classify and handle missing values without silent imputation.
 
@@ -66,7 +65,7 @@ def classify_missing(values, reasons: Optional[list[Optional[str]]] = None,
     values = list(values)
     reasons = reasons or [None] * len(values)
     flags: list[QualityFlag] = []
-    cleaned: list[Optional[float]] = []
+    cleaned: list[float | None] = []
     usable: list[bool] = []
     counts: dict[str, int] = {}
 
@@ -84,7 +83,7 @@ def classify_missing(values, reasons: Optional[list[Optional[str]]] = None,
         else:
             i += 1
 
-    last_valid: Optional[float] = None
+    last_valid: float | None = None
     for idx, v in enumerate(values):
         reason = (reasons[idx] or "").lower() if reasons[idx] else None
 
@@ -106,6 +105,7 @@ def classify_missing(values, reasons: Optional[list[Optional[str]]] = None,
         else:
             flag = QualityFlag.IMPUTED_LOCF if run_len[idx] <= locf_max else QualityFlag.MISSING_SENSOR
 
+        assert flag is not None
         if flag == QualityFlag.IMPUTED_LOCF and last_valid is not None:
             cleaned.append(last_valid)
             usable.append(True)

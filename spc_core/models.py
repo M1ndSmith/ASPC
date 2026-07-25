@@ -9,9 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -70,8 +69,8 @@ class LimitSet(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     center: float
-    ucl: Union[float, list[float]]
-    lcl: Union[float, list[float]]
+    ucl: float | list[float]
+    lcl: float | list[float]
 
     def ucl_at(self, i: int) -> float:
         return self.ucl[i] if isinstance(self.ucl, list) else self.ucl
@@ -94,9 +93,9 @@ class ControlLimits(BaseModel):
     # Component name -> LimitSet. e.g. {"individuals": ..., "moving_range": ...}
     components: dict[str, LimitSet]
     # Estimated within/short-term sigma of the plotted statistic (used by the rule engine).
-    sigma: Optional[float] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    source_n_points: Optional[int] = None
+    sigma: float | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    source_n_points: int | None = None
     notes: dict[str, float] = Field(default_factory=dict)
 
     @property
@@ -132,7 +131,7 @@ class Signal(BaseModel):
     index: int
     value: float
     description: str
-    side: Optional[str] = None  # "upper" | "lower" | None
+    side: str | None = None  # "upper" | "lower" | None
 
     def __str__(self) -> str:  # pragma: no cover - convenience only
         return f"[{self.rule_id}] point {self.index}: {self.description}"
@@ -146,16 +145,16 @@ class SPCRecord(BaseModel):
     against.
     """
 
-    timestamp: Optional[datetime] = None
-    subgroup_id: Optional[int] = None
+    timestamp: datetime | None = None
+    subgroup_id: int | None = None
     measurement_value: float
     data_quality_flag: QualityFlag = QualityFlag.ORIGINAL
     distribution_flag: DistributionFlag = DistributionFlag.NORMAL
-    transform_applied: Optional[str] = None
+    transform_applied: str | None = None
     phase: Phase = Phase.PHASE_I
-    ucl: Optional[float] = None
-    lcl: Optional[float] = None
-    centerline: Optional[float] = None
-    gage_id: Optional[str] = None
-    machine_id: Optional[str] = None
+    ucl: float | None = None
+    lcl: float | None = None
+    centerline: float | None = None
+    gage_id: str | None = None
+    machine_id: str | None = None
     signals: list[Signal] = Field(default_factory=list)

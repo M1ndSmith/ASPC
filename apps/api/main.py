@@ -15,9 +15,9 @@ from __future__ import annotations
 import json
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import (
     Depends,
@@ -36,7 +36,7 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from adapters.factory import get_repository
 from adapters.io_files import FileReadError, load_columns, resolve_under, save_upload_stream
@@ -162,7 +162,7 @@ def _create_access_token(subject: str) -> str:
         from jose import jwt
     except ImportError as exc:  # pragma: no cover
         raise HTTPException(500, "python-jose required for JWT auth") from exc
-    expire = datetime.now(timezone.utc) + timedelta(minutes=cfg.jwt_expire_minutes)
+    expire = datetime.now(UTC) + timedelta(minutes=cfg.jwt_expire_minutes)
     payload = {"sub": subject, "exp": expire}
     return jwt.encode(payload, cfg.jwt_secret, algorithm=cfg.jwt_algorithm)
 
@@ -183,7 +183,7 @@ def _decode_token(token: str) -> dict[str, Any]:
 
 
 def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> dict[str, Any]:
     """Validate Bearer JWT. When auth is disabled, return anonymous user."""
     if not cfg.auth_enabled:
@@ -197,7 +197,7 @@ def get_current_user(
     return _decode_token(credentials.credentials)
 
 
-def require_api_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")) -> str:
+def require_api_key(x_api_key: str | None = Header(None, alias="X-API-Key")) -> str:
     """Require X-API-Key for ingest / stream mutation endpoints.
 
     Fail-closed when no keys are configured, unless ``ASPC_DEV_INSECURE=1``.
@@ -234,14 +234,14 @@ class AnalyzeResponse(BaseModel):
     run_id: str
     analysis_type: str
     report: dict[str, Any]
-    html_report: Optional[str] = None
-    checklist: Optional[dict[str, Any]] = None
+    html_report: str | None = None
+    checklist: dict[str, Any] | None = None
 
 
 class HealthResponse(BaseModel):
     status: str
     version: str = "2.0.0"
-    checks: Optional[dict[str, str]] = None
+    checks: dict[str, str] | None = None
 
 
 class TokenResponse(BaseModel):
@@ -251,15 +251,15 @@ class TokenResponse(BaseModel):
 
 class StreamRegisterRequest(BaseModel):
     stream_key: str
-    topic: Optional[str] = None
-    chart_type: Optional[str] = None
+    topic: str | None = None
+    chart_type: str | None = None
     ruleset: str = "nelson"
-    meta: Optional[dict[str, Any]] = None
+    meta: dict[str, Any] | None = None
 
 
 class GoLiveRequest(BaseModel):
     limits_version: str
-    ruleset: Optional[str] = None
+    ruleset: str | None = None
 
 
 # ---- helpers ------------------------------------------------------------------
@@ -391,13 +391,13 @@ async def login_for_access_token(
 @app.post("/analyze/control-chart", response_model=AnalyzeResponse)
 async def analyze_cc(
     file: UploadFile = File(...),
-    value_col: Optional[str] = Form(None),
-    subgroup_col: Optional[str] = Form(None),
-    sample_size_col: Optional[str] = Form(None),
-    opportunity_col: Optional[str] = Form(None),
-    chart_type: Optional[str] = Form(None),
-    ruleset: Optional[str] = Form(None),
-    user_id: Optional[str] = Form(None),
+    value_col: str | None = Form(None),
+    subgroup_col: str | None = Form(None),
+    sample_size_col: str | None = Form(None),
+    opportunity_col: str | None = Form(None),
+    chart_type: str | None = Form(None),
+    ruleset: str | None = Form(None),
+    user_id: str | None = Form(None),
     include_records: bool = Form(False),
     _user: dict = Depends(get_current_user),
 ):
@@ -486,10 +486,10 @@ async def analyze_cap(
     file: UploadFile = File(...),
     usl: float = Form(...),
     lsl: float = Form(...),
-    target: Optional[float] = Form(None),
-    value_col: Optional[str] = Form(None),
-    subgroup_col: Optional[str] = Form(None),
-    user_id: Optional[str] = Form(None),
+    target: float | None = Form(None),
+    value_col: str | None = Form(None),
+    subgroup_col: str | None = Form(None),
+    user_id: str | None = Form(None),
     _user: dict = Depends(get_current_user),
 ):
     if usl <= lsl:
@@ -531,15 +531,15 @@ async def analyze_cap(
 @app.post("/analyze/msa", response_model=AnalyzeResponse)
 async def analyze_msa(
     file: UploadFile = File(...),
-    study_type: Optional[str] = Form(None),
+    study_type: str | None = Form(None),
     method: str = Form("anova"),
-    tolerance: Optional[float] = Form(None),
-    part_col: Optional[str] = Form(None),
-    operator_col: Optional[str] = Form(None),
-    measurement_col: Optional[str] = Form(None),
-    trial_col: Optional[str] = Form(None),
-    reference_col: Optional[str] = Form(None),
-    user_id: Optional[str] = Form(None),
+    tolerance: float | None = Form(None),
+    part_col: str | None = Form(None),
+    operator_col: str | None = Form(None),
+    measurement_col: str | None = Form(None),
+    trial_col: str | None = Form(None),
+    reference_col: str | None = Form(None),
+    user_id: str | None = Form(None),
     _user: dict = Depends(get_current_user),
 ):
     path = _save_file(file)
@@ -608,7 +608,7 @@ async def analyze_msa(
 
 @app.get("/runs")
 async def list_runs(
-    analysis_type: Optional[str] = None,
+    analysis_type: str | None = None,
     limit: int = Query(50, le=500),
     _user: dict = Depends(get_current_user),
 ):
@@ -745,7 +745,7 @@ async def ack_alert(
 
 
 @app.websocket("/ws/live/{stream_key}")
-async def ws_live(websocket: WebSocket, stream_key: str, token: Optional[str] = Query(None)):
+async def ws_live(websocket: WebSocket, stream_key: str, token: str | None = Query(None)):
     """Subscribe to Redis channel ``spc:live:{stream_key}`` and forward messages.
 
     Requires a valid JWT ``token`` query parameter when auth is enabled.
@@ -790,7 +790,7 @@ async def ws_live(websocket: WebSocket, stream_key: str, token: Optional[str] = 
             else:
                 try:
                     await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     pass
                 except WebSocketDisconnect:
                     break

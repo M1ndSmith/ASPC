@@ -29,9 +29,9 @@ def test_gage_rr_report_has_grr_percent(dataset):
 def test_gage_rr_poor(dataset):
     cols = dataset("msa_gage_rr_poor")
     result = gage_rr_anova(cols["Part"], cols["Operator"], cols["Measurement"])
-    assert result.grr_percent > result.grr_percent - 1  # just ensure computed
-    # Poor fixture typically has high GRR
-    assert result.grr_percent >= 0
+    assert isinstance(result.grr_percent, float)
+    assert result.grr_percent >= 10.0  # poor fixture is intentionally high GRR
+    assert result.acceptability in ("Acceptable", "Unacceptable")
 
 
 def test_gage_rr_range_method(dataset):

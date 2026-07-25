@@ -5,7 +5,6 @@ import argparse
 import logging
 import signal
 import sys
-from typing import Optional
 
 from adapters.factory import get_repository, require_streaming_repository
 from adapters.stream_engine import StreamEngine
@@ -15,7 +14,7 @@ from apps.config import get_config
 logger = logging.getLogger("aspc.stream_engine")
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="aspc-stream-engine",
         description="ASPC Phase II stream engine — Kafka → evaluate → Timescale/Redis",

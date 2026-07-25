@@ -8,14 +8,14 @@ Returns gates with status ok | warn | stop so callers can enforce go-live.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
 from .charts import ControlChartResult, analyze_control_chart
 from .cleaning import classify_missing
 from .models import ChartType, DistributionFlag, Phase, QualityFlag
-from .msa import GageRRResult, gage_rr_anova, gage_resolution_gate, ndc_gate
+from .msa import GageRRResult, gage_resolution_gate, gage_rr_anova, ndc_gate
 from .multimodal import MultimodalResult, check_multimodal
 from .normality import (
     AutocorrelationResult,
@@ -39,11 +39,11 @@ class Gate:
 class PipelineResult:
     chart: ControlChartResult
     gates: list[Gate]
-    normality: Optional[NormalityResult] = None
-    autocorrelation: Optional[AutocorrelationResult] = None
-    multimodal: Optional[MultimodalResult] = None
-    transform: Optional[TransformResult] = None
-    msa: Optional[GageRRResult] = None
+    normality: NormalityResult | None = None
+    autocorrelation: AutocorrelationResult | None = None
+    multimodal: MultimodalResult | None = None
+    transform: TransformResult | None = None
+    msa: GageRRResult | None = None
     stopped: bool = False
     frozen: bool = True
     chart_route: str = "shewhart"
@@ -52,7 +52,7 @@ class PipelineResult:
     def limits_version(self) -> str:
         return self.chart.limits.version
 
-    def gate_status(self, step: str) -> Optional[str]:
+    def gate_status(self, step: str) -> str | None:
         for g in self.gates:
             if g.step == step:
                 return g.status
@@ -65,15 +65,15 @@ def establish(
     subgroup_ids=None,
     sample_sizes=None,
     opportunities=None,
-    chart_type: Optional[ChartType] = None,
+    chart_type: ChartType | None = None,
     ruleset: str = "nelson",
     acf_threshold: float = 0.2,
     # Optional MSA inputs — when provided, MSA gate runs.
     msa_parts=None,
     msa_operators=None,
     msa_measurements=None,
-    msa_tolerance: Optional[float] = None,
-    gage_resolution: Optional[float] = None,
+    msa_tolerance: float | None = None,
+    gage_resolution: float | None = None,
     # Missing-value reasons aligned with values (optional).
     missing_reasons=None,
     # Prefer EWMA over CUSUM when autocorrelated.
@@ -86,11 +86,11 @@ def establish(
     working = arr.copy()
     dist_flag = DistributionFlag.NORMAL
     transform_applied = None
-    transform: Optional[TransformResult] = None
-    normality: Optional[NormalityResult] = None
-    acf: Optional[AutocorrelationResult] = None
-    multimodal: Optional[MultimodalResult] = None
-    msa_result: Optional[GageRRResult] = None
+    transform: TransformResult | None = None
+    normality: NormalityResult | None = None
+    acf: AutocorrelationResult | None = None
+    multimodal: MultimodalResult | None = None
+    msa_result: GageRRResult | None = None
     route = "shewhart"
     active_ruleset = ruleset
     active_chart = chart_type

@@ -5,8 +5,9 @@ All generators are numpy-seeded so outputs are reproducible across runs.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 import numpy as np
 

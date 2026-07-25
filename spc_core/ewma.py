@@ -12,7 +12,6 @@ Defaults: λ=0.2, L=3.0. Sigma estimated from MR/d2 when not supplied.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 
@@ -31,7 +30,7 @@ class EWMAResult:
     lcl: list[float]
     center: float
     signals: list[Signal] = field(default_factory=list)
-    limits: Optional[ControlLimits] = None
+    limits: ControlLimits | None = None
 
 
 def _estimate_sigma_mr(values: np.ndarray) -> float:
@@ -45,8 +44,8 @@ def ewma_chart(
     values,
     lam: float = 0.2,
     L: float = 3.0,
-    target: Optional[float] = None,
-    sigma: Optional[float] = None,
+    target: float | None = None,
+    sigma: float | None = None,
 ) -> EWMAResult:
     """Compute EWMA statistic series with time-varying control limits."""
     if not (0.0 < lam <= 1.0):

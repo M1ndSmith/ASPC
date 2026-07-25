@@ -96,7 +96,7 @@ export function Spinner({ label = "Loading…" }: { label?: string }) {
 export function FileField({
   id,
   label,
-  accept = ".csv,.parquet,.xlsx",
+  accept = ".csv,.parquet,.pq",
   onChange,
   required,
 }: {

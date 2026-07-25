@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import csv
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
-
+from typing import Any
 
 _COLUMNS = (
     "stream_key",

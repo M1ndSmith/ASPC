@@ -6,7 +6,6 @@ numpy directly so statsmodels is not a required dependency.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 from scipy import stats
@@ -19,14 +18,14 @@ class NormalityResult:
     tests_passed: int
     total_tests: int
     confidence: str
-    shapiro_stat: Optional[float] = None
-    shapiro_p: Optional[float] = None
-    anderson_stat: Optional[float] = None
-    anderson_critical: Optional[float] = None
-    ks_stat: Optional[float] = None
-    ks_p: Optional[float] = None
-    skewness: Optional[float] = None
-    kurtosis: Optional[float] = None
+    shapiro_stat: float | None = None
+    shapiro_p: float | None = None
+    anderson_stat: float | None = None
+    anderson_critical: float | None = None
+    ks_stat: float | None = None
+    ks_p: float | None = None
+    skewness: float | None = None
+    kurtosis: float | None = None
     recommendation: str = ""
     detail: dict = field(default_factory=dict)
 
@@ -194,8 +193,8 @@ class TransformResult:
     applied: str            # "NONE" | "LOG" | "BOXCOX" | "YEO-JOHNSON"
     label: str              # human-readable, includes lambda where relevant
     values: np.ndarray
-    lam: Optional[float] = None
-    became_normal: Optional[bool] = None
+    lam: float | None = None
+    became_normal: bool | None = None
 
 
 def apply_transform(values, method: str = "auto", alpha: float = 0.05) -> TransformResult:

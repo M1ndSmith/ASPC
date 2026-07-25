@@ -10,7 +10,6 @@ Corrections vs the legacy code:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 from scipy import stats
@@ -42,7 +41,7 @@ def sigma_to_dpmo(z_bench: float) -> float:
     return float((1.0 - stats.norm.cdf(z_bench)) * 1_000_000.0)
 
 
-def _sigma_within(values: np.ndarray, subgroups: Optional[list[np.ndarray]]) -> float:
+def _sigma_within(values: np.ndarray, subgroups: list[np.ndarray] | None) -> float:
     if subgroups:
         n = int(np.median([len(s) for s in subgroups]))
         if n >= 2:
@@ -64,19 +63,19 @@ class CapabilityResult:
     method: str                       # "parametric" | "nonparametric" | "transformed"
     sigma_within: float
     sigma_overall: float
-    cp: Optional[float] = None
-    cpk: Optional[float] = None
-    cpu: Optional[float] = None
-    cpl: Optional[float] = None
-    cpm: Optional[float] = None
-    pp: Optional[float] = None
-    ppk: Optional[float] = None
-    ppu: Optional[float] = None
-    ppl: Optional[float] = None
+    cp: float | None = None
+    cpk: float | None = None
+    cpu: float | None = None
+    cpl: float | None = None
+    cpm: float | None = None
+    pp: float | None = None
+    ppk: float | None = None
+    ppu: float | None = None
+    ppl: float | None = None
     observed_dpmo: float = 0.0
-    expected_dpmo: Optional[float] = None
-    z_bench: Optional[float] = None
-    sigma_level: Optional[float] = None
+    expected_dpmo: float | None = None
+    z_bench: float | None = None
+    sigma_level: float | None = None
     yield_pct: float = 100.0
     is_centered: bool = True
     offset_from_target: float = 0.0
@@ -84,7 +83,7 @@ class CapabilityResult:
     notes: dict = field(default_factory=dict)
 
 
-def _rate(cpk: Optional[float]) -> str:
+def _rate(cpk: float | None) -> str:
     if cpk is None:
         return "Unknown"
     if cpk >= 1.67:
@@ -112,7 +111,7 @@ def parametric_capability(values, usl, lsl, target=None, subgroups=None) -> Capa
         cp = spec_width / (6 * sigma) if sigma > 0 else None
         cpu = (usl - mean) / (3 * sigma) if sigma > 0 else None
         cpl = (mean - lsl) / (3 * sigma) if sigma > 0 else None
-        cpk = min(cpu, cpl) if sigma > 0 else None
+        cpk = min(cpu, cpl) if sigma > 0 and cpu is not None and cpl is not None else None
         return cp, cpk, cpu, cpl
 
     cp, cpk, cpu, cpl = _indices(sig_w)
@@ -203,7 +202,7 @@ def _finish(arr, usl, lsl, target, mean, sig_w, sig_o, method,
 
 
 def capability_analysis(values, usl, lsl, target=None, subgroups=None,
-                        force_method: Optional[str] = None) -> CapabilityResult:
+                        force_method: str | None = None) -> CapabilityResult:
     """Full capability decision: normality -> transform -> parametric or non-parametric.
 
     Returns a :class:`CapabilityResult`; the chosen ``method`` records the path taken.
@@ -238,7 +237,7 @@ def capability_analysis(values, usl, lsl, target=None, subgroups=None,
                 "path": "transformed_parametric",
             }
             return res
-        except Exception as exc:
+        except Exception:
             # Fall through to nonparametric if transform of specs fails.
             pass
 
@@ -254,7 +253,6 @@ def capability_analysis(values, usl, lsl, target=None, subgroups=None,
 
 def _transform_specs(usl, lsl, target, tr):
     """Apply the same transform used on data to the specification limits."""
-    from .normality import apply_transform
 
     if tr.applied == "LOG":
         if min(usl, lsl, target if target is not None else usl) <= 0:
@@ -264,7 +262,6 @@ def _transform_specs(usl, lsl, target, tr):
         return np.log(usl), np.log(lsl), np.log(target) if target is not None else None
 
     if tr.applied == "BOXCOX":
-        from scipy.stats import boxcox
 
         lam = tr.lam
         def _bc(x):
@@ -274,7 +271,6 @@ def _transform_specs(usl, lsl, target, tr):
         return float(_bc(usl)), float(_bc(lsl)), float(_bc(target)) if target is not None else None
 
     if tr.applied == "YEO-JOHNSON":
-        from scipy.stats import yeojohnson
 
         # yeojohnson on a scalar needs the fitted lambda.
         def _yj(x, lam):

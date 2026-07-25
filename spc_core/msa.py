@@ -7,7 +7,6 @@ while the pipeline emitted a nested ``percent_study_variation['gage_rr']``).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 from scipy import stats
@@ -95,11 +94,11 @@ class GageRRResult:
     part_percent: float
     ndc: int
     acceptability: str
-    grr_percent_tolerance: Optional[float] = None
+    grr_percent_tolerance: float | None = None
     detail: dict = field(default_factory=dict)
 
 
-def gage_rr_anova(parts, operators, measurements, tolerance: Optional[float] = None) -> GageRRResult:
+def gage_rr_anova(parts, operators, measurements, tolerance: float | None = None) -> GageRRResult:
     parts = np.asarray(list(parts))
     operators = np.asarray(list(operators))
     y = np.asarray(list(measurements), dtype=float)
@@ -120,7 +119,6 @@ def gage_rr_anova(parts, operators, measurements, tolerance: Optional[float] = N
         }
         result.method = "Range (unbalanced fallback)"
         return result
-    n = len(y)
     if n_trials < 1:
         raise ValueError("Gage R&R requires at least one trial per part-operator cell")
 
@@ -132,7 +130,7 @@ def gage_rr_anova(parts, operators, measurements, tolerance: Optional[float] = N
     ss_part = n_ops * n_trials * float(np.sum((np.array([part_means[p] for p in uparts]) - grand) ** 2))
     ss_op = n_parts * n_trials * float(np.sum((np.array([op_means[o] for o in uops]) - grand) ** 2))
 
-    cell_means = {}
+    cell_means: dict[tuple, list[float]] = {}
     for p, o, v in zip(parts, operators, y):
         cell_means.setdefault((p, o), []).append(v)
     cell_mean_arr = np.array([np.mean(cell_means[(p, o)]) for p in uparts for o in uops
@@ -184,7 +182,7 @@ def gage_rr_anova(parts, operators, measurements, tolerance: Optional[float] = N
     )
 
 
-def gage_rr_range(parts, operators, measurements, tolerance: Optional[float] = None) -> GageRRResult:
+def gage_rr_range(parts, operators, measurements, tolerance: float | None = None) -> GageRRResult:
     parts = np.asarray(list(parts))
     operators = np.asarray(list(operators))
     y = np.asarray(list(measurements), dtype=float)

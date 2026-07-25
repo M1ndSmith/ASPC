@@ -16,7 +16,6 @@ Also supports EWMA and CUSUM (explicit chart_type or pipeline routing).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 
@@ -30,6 +29,7 @@ from .models import (
     ControlLimits,
     DataType,
     DistributionFlag,
+    LimitSet,
     Phase,
     QualityFlag,
     Signal,
@@ -79,13 +79,13 @@ class ControlChartResult:
     subgroup_size: int
     limits: ControlLimits
     plotted_values: list[float]
-    secondary_values: Optional[list[float]] = None
-    secondary_name: Optional[str] = None
+    secondary_values: list[float] | None = None
+    secondary_name: str | None = None
     signals: list[Signal] = field(default_factory=list)
     secondary_signals: list[Signal] = field(default_factory=list)
     summary: dict = field(default_factory=dict)
     distribution_flag: DistributionFlag = DistributionFlag.NORMAL
-    transform_applied: Optional[str] = None
+    transform_applied: str | None = None
     phase: Phase = Phase.PHASE_I
 
     @property
@@ -99,8 +99,8 @@ class ControlChartResult:
         timestamps=None,
         subgroup_ids=None,
         quality_flags=None,
-        gage_id: Optional[str] = None,
-        machine_id: Optional[str] = None,
+        gage_id: str | None = None,
+        machine_id: str | None = None,
     ) -> list[SPCRecord]:
         """Emit one SPCRecord per plotted point with limits, flags, and signals."""
         primary = self.limits.primary
@@ -140,15 +140,14 @@ class ControlChartResult:
         return records
 
 
-def _secondary_signals(secondary_values, secondary_limits: Optional, ruleset: str) -> list[Signal]:
+def _secondary_signals(secondary_values, secondary_limits: LimitSet | None, ruleset: str) -> list[Signal]:
     if secondary_values is None or secondary_limits is None:
         return []
     center = secondary_limits.center
     ucl = secondary_limits.ucl if not isinstance(secondary_limits.ucl, list) else None
-    lcl = secondary_limits.lcl if not isinstance(secondary_limits.lcl, list) else None
     if ucl is None:
         return []
-    sigma = (float(ucl) - center) / 3.0 if ucl is not None else 0.0
+    sigma = (float(ucl) - center) / 3.0
     # Wheeler / points-outside for secondary panels (R/MR/S zone tests rarely used).
     rs = "wheeler" if ruleset == "wheeler" else ruleset
     return R.evaluate_series(secondary_values, center=center, sigma=max(sigma, 0.0), ruleset=rs)
@@ -159,7 +158,7 @@ def analyze_control_chart(
     subgroup_ids=None,
     sample_sizes=None,
     opportunities=None,
-    chart_type: Optional[ChartType] = None,
+    chart_type: ChartType | None = None,
     ruleset: str = "nelson",
     ewma_lambda: float = 0.2,
     ewma_L: float = 3.0,
@@ -246,18 +245,18 @@ def analyze_control_chart(
         dtype = DataType.CONTINUOUS
 
     elif chart_type == ChartType.P:
-        n = np.asarray(sample_sizes, dtype=float)
-        if np.any(n <= 0):
+        n_arr = np.asarray(sample_sizes, dtype=float)
+        if np.any(n_arr <= 0):
             raise ValueError("P chart sample sizes must be > 0")
-        limits = L.p_limits(arr, n)
-        plotted = (arr / n).tolist()
+        limits = L.p_limits(arr, n_arr)
+        plotted = (arr / n_arr).tolist()
         dtype = DataType.ATTRIBUTE
 
     elif chart_type == ChartType.NP:
-        n = float(np.asarray(sample_sizes)[0]) if sample_sizes is not None else float(arr.size)
-        limits = L.np_limits(arr, n)
+        n_np = float(np.asarray(sample_sizes)[0]) if sample_sizes is not None else float(arr.size)
+        limits = L.np_limits(arr, n_np)
         plotted = arr.tolist()
-        subgroup_size = int(n)
+        subgroup_size = int(n_np)
         dtype = DataType.ATTRIBUTE
 
     elif chart_type == ChartType.C:
@@ -275,6 +274,9 @@ def analyze_control_chart(
 
     else:  # pragma: no cover
         raise ValueError(f"Unsupported chart type: {chart_type}")
+
+    if limits is None:
+        raise RuntimeError(f"Limits not established for chart type {chart_type}")
 
     # ---- run-rule signals (Shewhart paths) ----
     if chart_type not in (ChartType.EWMA, ChartType.CUSUM):

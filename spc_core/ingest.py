@@ -6,7 +6,7 @@ Adapters convert CSV/Parquet into this shape before calling.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -18,15 +18,15 @@ MEASUREMENT_PRIORITY = ("measurement", "value", "measure", "reading", "result", 
 
 @dataclass
 class ColumnMap:
-    value_col: Optional[str] = None
-    subgroup_col: Optional[str] = None
-    sample_size_col: Optional[str] = None
-    opportunity_col: Optional[str] = None
-    part_col: Optional[str] = None
-    operator_col: Optional[str] = None
-    trial_col: Optional[str] = None
-    reference_col: Optional[str] = None
-    date_col: Optional[str] = None
+    value_col: str | None = None
+    subgroup_col: str | None = None
+    sample_size_col: str | None = None
+    opportunity_col: str | None = None
+    part_col: str | None = None
+    operator_col: str | None = None
+    trial_col: str | None = None
+    reference_col: str | None = None
+    date_col: str | None = None
     issues: list[str] = field(default_factory=list)
 
 
@@ -49,7 +49,7 @@ def _numeric_columns(columns: dict[str, list[Any]]) -> list[str]:
     return out
 
 
-def _pick_measurement(numeric_cols: list[str]) -> Optional[str]:
+def _pick_measurement(numeric_cols: list[str]) -> str | None:
     filtered = [c for c in numeric_cols
                 if not any(p in c.lower() for p in SKIP_PATTERNS)]
     candidates = filtered or numeric_cols
@@ -62,7 +62,7 @@ def _pick_measurement(numeric_cols: list[str]) -> Optional[str]:
     return candidates[0]
 
 
-def _find_by_names(columns: dict[str, list[Any]], names: tuple[str, ...]) -> Optional[str]:
+def _find_by_names(columns: dict[str, list[Any]], names: tuple[str, ...]) -> str | None:
     lower = {c.lower(): c for c in columns}
     for name in names:
         if name in lower:
@@ -75,15 +75,15 @@ def _find_by_names(columns: dict[str, list[Any]], names: tuple[str, ...]) -> Opt
 
 
 def detect_columns(columns: dict[str, list[Any]],
-                   value_col: Optional[str] = None,
-                   subgroup_col: Optional[str] = None,
-                   sample_size_col: Optional[str] = None,
-                   opportunity_col: Optional[str] = None,
-                   part_col: Optional[str] = None,
-                   operator_col: Optional[str] = None,
-                   trial_col: Optional[str] = None,
-                   reference_col: Optional[str] = None,
-                   date_col: Optional[str] = None) -> ColumnMap:
+                   value_col: str | None = None,
+                   subgroup_col: str | None = None,
+                   sample_size_col: str | None = None,
+                   opportunity_col: str | None = None,
+                   part_col: str | None = None,
+                   operator_col: str | None = None,
+                   trial_col: str | None = None,
+                   reference_col: str | None = None,
+                   date_col: str | None = None) -> ColumnMap:
     """Auto-detect standard SPC/MSA column roles from a column dict."""
     cmap = ColumnMap(
         value_col=value_col,

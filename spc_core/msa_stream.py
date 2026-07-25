@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 
@@ -33,7 +32,7 @@ class ContinuousMSAState:
     reference_biases: list[float] = field(default_factory=list)
     rolling_ranges: deque = field(default_factory=lambda: deque(maxlen=50))
     alerts: list[CalibrationAlert] = field(default_factory=list)
-    _last_ref: Optional[float] = None
+    _last_ref: float | None = None
     _n: int = 0
 
     @property
@@ -60,7 +59,7 @@ class ContinuousMSA:
             alpha=alpha, tolerance=tolerance, alert_fraction=alert_fraction,
         )
 
-    def observe_reference(self, measured: float, reference: float) -> Optional[CalibrationAlert]:
+    def observe_reference(self, measured: float, reference: float) -> CalibrationAlert | None:
         """Record a reference-standard measurement; return alert if drift detected."""
         bias = float(measured) - float(reference)
         st = self.state

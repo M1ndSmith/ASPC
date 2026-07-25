@@ -28,6 +28,7 @@ export default function LivePage() {
   const [error, setError] = useState<string | null>(null);
   const [values, setValues] = useState<number[]>([]);
   const [ooc, setOoc] = useState<number[]>([]);
+  const [streamIndices, setStreamIndices] = useState<number[]>([]);
   const [ucl, setUcl] = useState<number>(0);
   const [cl, setCl] = useState<number>(0);
   const [lcl, setLcl] = useState<number>(0);
@@ -47,9 +48,10 @@ export default function LivePage() {
     if (msg.type === "point" || msg.value !== undefined) {
       const v = msg.value;
       if (typeof v === "number") {
-        setValues((prev) => {
-          const next = [...prev, v].slice(-MAX_POINTS);
-          return next;
+        setValues((prev) => [...prev, v].slice(-MAX_POINTS));
+        setStreamIndices((prev) => {
+          const streamIdx = typeof msg.index === "number" ? msg.index : (prev.at(-1) ?? -1) + 1;
+          return [...prev, streamIdx].slice(-MAX_POINTS);
         });
         if (typeof msg.ucl === "number") setUcl(msg.ucl);
         if (typeof msg.center === "number") setCl(msg.center);
@@ -59,9 +61,16 @@ export default function LivePage() {
 
     const sigs = msg.signals || (msg.signal ? [msg.signal] : []);
     if (sigs.length || msg.type === "alert") {
-      setOoc((prev) => {
-        const idx = msg.index ?? values.length;
-        return [...prev, idx].slice(-MAX_POINTS);
+      // Map server stream index → chart array index within the sliding window
+      setStreamIndices((indices) => {
+        const streamIdx = typeof msg.index === "number" ? msg.index : indices.at(-1);
+        if (typeof streamIdx === "number") {
+          const chartIdx = indices.lastIndexOf(streamIdx);
+          if (chartIdx >= 0) {
+            setOoc((prev) => [...prev, chartIdx].slice(-MAX_POINTS));
+          }
+        }
+        return indices;
       });
       setAlerts((prev) => {
         const added = sigs.map((s) => ({ ...s, ts: msg.ts }));
@@ -82,7 +91,7 @@ export default function LivePage() {
     if (msg.type === "error") {
       setError(msg.message || "WebSocket error");
     }
-  }, [values.length]);
+  }, []);
 
   function disconnect() {
     sockRef.current?.close();
@@ -95,9 +104,11 @@ export default function LivePage() {
     disconnect();
     setValues([]);
     setOoc([]);
+    setStreamIndices([]);
     setAlerts([]);
     const handle = connectLiveSocket(activeKey, onMessage, {
       token: getToken(),
+      reconnect: true,
       onOpen: () => setConnected(true),
       onClose: () => setConnected(false),
       onError: () => setError("WebSocket connection failed"),

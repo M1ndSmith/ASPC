@@ -7,8 +7,8 @@ import logging
 import os
 import signal
 import sys
-from datetime import datetime
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger("aspc.mqtt_bridge")
 
@@ -37,6 +37,7 @@ def _produce_kafka(bootstrap: str, topic: str, messages):
 
     try:
         import asyncio
+
         from aiokafka import AIOKafkaProducer
     except ImportError as exc:
         raise ImportError(
@@ -70,13 +71,12 @@ def _normalise(msg: dict[str, Any]) -> dict[str, Any]:
     if isinstance(ts, datetime):
         ts = ts.isoformat()
     elif ts is None:
-        from datetime import timezone
 
-        ts = datetime.now(timezone.utc).isoformat()
+        ts = datetime.now(UTC).isoformat()
     return {"key": key, "value": float(value), "timestamp": ts}
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="aspc-mqtt-bridge",
         description="Bridge MQTT sensor topics into the ASPC Kafka measurement topic",

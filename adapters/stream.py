@@ -10,8 +10,8 @@ from __future__ import annotations
 import csv
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Callable, Iterator, Optional
 
 from spc_core.evaluator import Phase2Evaluator
 from spc_core.models import ControlLimits, Signal
@@ -51,7 +51,7 @@ def stream_evaluate(
     source: ObservationSource,
     limits: ControlLimits,
     ruleset: str = "nelson",
-    on_signal: Optional[Callable[[Signal], None]] = None,
+    on_signal: Callable[[Signal], None] | None = None,
 ) -> list[Signal]:
     """Feed a source into Phase2Evaluator; optionally call ``on_signal`` for each hit.
 

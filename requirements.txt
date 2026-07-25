@@ -1,19 +1,24 @@
-# ASPC v2 dependencies
-# Prefer: uv pip install -e ".[dev]"
-# This file is kept for backwards-compatible installs.
-
+# ASPC dependencies — generated from pyproject.toml extras.
+# Prefer:  uv pip install -e ".[dev]"
+# Or:      uv sync
+#
+# Minimal core (library only):
 numpy>=1.26
 scipy>=1.11
 pydantic>=2.5
-python-dotenv>=1.0
-pyyaml>=6.0
 
-# Optional (also available via extras in pyproject.toml)
-# polars>=0.20
-# plotly>=5.18
-# fastapi>=0.110
-# uvicorn[standard]>=0.27
-# python-multipart>=0.0.9
-# pytest>=7.4
-# httpx>=0.27
-# requests>=2.31
+# Apps (API / CLI)
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+pyyaml>=6.0
+python-dotenv>=1.0
+requests>=2.31
+python-jose[cryptography]>=3.3
+bcrypt>=4.0
+slowapi>=0.1.9
+prometheus-client>=0.20
+redis>=5.0
+
+# Optional extras — install via uv pip install -e ".[data,render,stream,tsdb,dev]"
+# polars, plotly, aiokafka, aiomqtt, sqlalchemy, alembic, asyncpg, psycopg, pytest, ruff, mypy

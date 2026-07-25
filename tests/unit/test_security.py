@@ -1,9 +1,6 @@
 """Security hardening tests — auth, traversal, API keys, go-live gates."""
 from __future__ import annotations
 
-import os
-from pathlib import Path
-
 import pytest
 
 pytest.importorskip("fastapi")
@@ -126,7 +123,7 @@ def test_go_live_rejects_unfrozen_limits(secure_client, tmp_path):
         meta={"frozen": False, "stopped": True, "checklist_passed": False},
     )
     r = secure_client.post(
-        f"/streams/line-x/go-live",
+        "/streams/line-x/go-live",
         json={"limits_version": version},
         headers={"Authorization": f"Bearer {token}", "X-API-Key": "test-key"},
     )

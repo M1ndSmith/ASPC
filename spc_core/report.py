@@ -6,8 +6,8 @@ the statistics.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -26,31 +26,31 @@ class SPCReport(BaseModel):
     phase: Phase = Phase.PHASE_I
     limits: ControlLimits
     plotted_values: list[float]
-    secondary_values: Optional[list[float]] = None
-    secondary_name: Optional[str] = None
+    secondary_values: list[float] | None = None
+    secondary_name: str | None = None
     signals: list[Signal] = Field(default_factory=list)
     subgroup_size: int = 1
     summary: dict[str, Any] = Field(default_factory=dict)
-    normality: Optional[dict[str, Any]] = None
-    autocorrelation: Optional[dict[str, Any]] = None
-    gates: Optional[list[dict[str, Any]]] = None
-    checklist: Optional[dict[str, Any]] = None
-    records: Optional[list[dict[str, Any]]] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    source_file: Optional[str] = None
+    normality: dict[str, Any] | None = None
+    autocorrelation: dict[str, Any] | None = None
+    gates: list[dict[str, Any]] | None = None
+    checklist: dict[str, Any] | None = None
+    records: list[dict[str, Any]] | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    source_file: str | None = None
 
     @classmethod
     def from_chart_result(
         cls,
         result: ControlChartResult,
-        normality: Optional[NormalityResult] = None,
-        autocorrelation: Optional[AutocorrelationResult] = None,
-        source_file: Optional[str] = None,
+        normality: NormalityResult | None = None,
+        autocorrelation: AutocorrelationResult | None = None,
+        source_file: str | None = None,
         phase: Phase = Phase.PHASE_I,
-        gates: Optional[list] = None,
-        checklist: Optional[dict] = None,
+        gates: list | None = None,
+        checklist: dict | None = None,
         include_records: bool = False,
-    ) -> "SPCReport":
+    ) -> SPCReport:
         records = None
         if include_records:
             records = [r.model_dump(mode="json") for r in result.to_records()]
@@ -86,17 +86,17 @@ class SPCReport(BaseModel):
 class CapabilityReport(BaseModel):
     analysis_type: str = "capability"
     result: dict[str, Any]
-    normality: Optional[dict[str, Any]] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    source_file: Optional[str] = None
+    normality: dict[str, Any] | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    source_file: str | None = None
 
     @classmethod
     def from_capability(
         cls,
         result: CapabilityResult,
-        normality: Optional[NormalityResult] = None,
-        source_file: Optional[str] = None,
-    ) -> "CapabilityReport":
+        normality: NormalityResult | None = None,
+        source_file: str | None = None,
+    ) -> CapabilityReport:
         return cls(
             result=_capability_dict(result),
             normality=_normality_dict(normality),
@@ -108,11 +108,11 @@ class MSAReport(BaseModel):
     analysis_type: str = "msa"
     study_type: str
     result: dict[str, Any]
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    source_file: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    source_file: str | None = None
 
     @classmethod
-    def from_gage_rr(cls, result: GageRRResult, source_file: Optional[str] = None) -> "MSAReport":
+    def from_gage_rr(cls, result: GageRRResult, source_file: str | None = None) -> MSAReport:
         return cls(
             study_type="Gage R&R",
             result={
@@ -136,7 +136,7 @@ class MSAReport(BaseModel):
         )
 
     @classmethod
-    def from_bias(cls, result: BiasResult, source_file: Optional[str] = None) -> "MSAReport":
+    def from_bias(cls, result: BiasResult, source_file: str | None = None) -> MSAReport:
         return cls(
             study_type="Bias",
             result={
@@ -152,7 +152,7 @@ class MSAReport(BaseModel):
         )
 
     @classmethod
-    def from_linearity(cls, result: LinearityResult, source_file: Optional[str] = None) -> "MSAReport":
+    def from_linearity(cls, result: LinearityResult, source_file: str | None = None) -> MSAReport:
         return cls(
             study_type="Linearity",
             result={
@@ -167,7 +167,7 @@ class MSAReport(BaseModel):
         )
 
     @classmethod
-    def from_stability(cls, result: StabilityResult, source_file: Optional[str] = None) -> "MSAReport":
+    def from_stability(cls, result: StabilityResult, source_file: str | None = None) -> MSAReport:
         return cls(
             study_type="Stability",
             result={
@@ -184,7 +184,7 @@ class MSAReport(BaseModel):
         )
 
 
-def _normality_dict(n: Optional[NormalityResult]) -> Optional[dict[str, Any]]:
+def _normality_dict(n: NormalityResult | None) -> dict[str, Any] | None:
     if n is None:
         return None
     return {
@@ -200,7 +200,7 @@ def _normality_dict(n: Optional[NormalityResult]) -> Optional[dict[str, Any]]:
     }
 
 
-def _acf_dict(a: Optional[AutocorrelationResult]) -> Optional[dict[str, Any]]:
+def _acf_dict(a: AutocorrelationResult | None) -> dict[str, Any] | None:
     if a is None:
         return None
     return {

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from spc_core.normality import apply_transform, check_autocorrelation, check_normality
 

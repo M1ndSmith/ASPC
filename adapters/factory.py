@@ -2,17 +2,17 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from adapters.persistence import Repository, SQLiteRepository
 
 
 def get_repository(
     cfg: Any = None,
-    backend: Optional[str] = None,
+    backend: str | None = None,
     *,
     sqlite_path: str | Path | None = None,
-    timescale_dsn: Optional[str] = None,
+    timescale_dsn: str | None = None,
 ) -> Repository:
     """Return a :class:`Repository` for the requested backend.
 

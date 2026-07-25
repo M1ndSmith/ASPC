@@ -5,16 +5,15 @@ Rendering lives outside the core so the statistics library stays free of Plotly.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from spc_core.report import CapabilityReport, MSAReport, SPCReport
 
 
-def render_control_chart_html(report: SPCReport, title: Optional[str] = None) -> str:
+def render_control_chart_html(report: SPCReport, title: str | None = None) -> str:
     try:
         import plotly.graph_objects as go
-        from plotly.subplots import make_subplots
         import plotly.io as pio
+        from plotly.subplots import make_subplots
     except ImportError as exc:
         raise ImportError(
             "plotly is required for HTML reports. Install with: pip install aspc[render]"
@@ -122,7 +121,7 @@ table{{border-collapse:collapse;}} td,th{{border:1px solid #ddd;padding:8px;}}</
 </body></html>"""
 
 
-def render_msa_html(report: MSAReport, title: Optional[str] = None) -> str:
+def render_msa_html(report: MSAReport, title: str | None = None) -> str:
     title = title or f"MSA Report — {report.study_type}"
     rows = "".join(
         f"<tr><td>{k}</td><td>{v}</td></tr>"

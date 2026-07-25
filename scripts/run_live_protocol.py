@@ -12,7 +12,7 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,8 +71,8 @@ def get_token() -> str:
 
 def multipart_analyze(token: str, path: Path) -> dict:
     """POST /analyze/control-chart with file upload (stdlib multipart)."""
-    import uuid
     import urllib.request
+    import uuid
 
     boundary = f"----aspc{uuid.uuid4().hex}"
     file_bytes = path.read_bytes()
@@ -315,7 +315,7 @@ def main() -> int:
 
     result = {
         "passed": passed,
-        "finished_at": datetime.now(timezone.utc).isoformat(),
+        "finished_at": datetime.now(UTC).isoformat(),
         "limits_version": limits_version,
         "run_id": analyze.get("run_id"),
         "redis_messages": len(collector.messages),

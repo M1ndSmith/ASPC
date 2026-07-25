@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 try:
     import yaml
@@ -11,7 +11,6 @@ except ImportError:  # pragma: no cover
     yaml = None
 
 from dotenv import load_dotenv
-
 
 DEFAULTS: dict[str, Any] = {
     "api": {
@@ -59,7 +58,7 @@ DEFAULTS: dict[str, Any] = {
 
 
 class Config:
-    def __init__(self, config_path: Optional[str | Path] = None):
+    def __init__(self, config_path: str | Path | None = None):
         root = Path(__file__).resolve().parents[1]  # repo root (apps/ -> ASPC/)
         load_dotenv(root / ".env")
 
@@ -171,7 +170,7 @@ class Config:
         return self.config["persistence"]["sqlite_path"]
 
     @property
-    def timescale_dsn(self) -> Optional[str]:
+    def timescale_dsn(self) -> str | None:
         return self.config["persistence"].get("timescale_dsn")
 
     @property
@@ -232,7 +231,7 @@ class Config:
         return int(self.config["spc"].get("min_phase1_points") or 25)
 
 
-_config: Optional[Config] = None
+_config: Config | None = None
 
 
 def get_config() -> Config:

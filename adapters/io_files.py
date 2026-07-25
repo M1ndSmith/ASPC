@@ -7,7 +7,7 @@ from __future__ import annotations
 import csv
 import re
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
 class FileReadError(Exception):
@@ -88,8 +88,8 @@ def load_columns(path: str | Path) -> dict[str, list[Any]]:
 
 
 def save_upload(content: bytes, dest_dir: str | Path, filename: str,
-                max_bytes: Optional[int] = None,
-                allowed_extensions: Optional[list[str]] = None) -> Path:
+                max_bytes: int | None = None,
+                allowed_extensions: list[str] | None = None) -> Path:
     """Write an uploaded file safely into dest_dir."""
     dest = Path(dest_dir)
     dest.mkdir(parents=True, exist_ok=True)
@@ -111,8 +111,8 @@ def save_upload_stream(
     dest_dir: str | Path,
     filename: str,
     *,
-    max_bytes: Optional[int] = None,
-    allowed_extensions: Optional[list[str]] = None,
+    max_bytes: int | None = None,
+    allowed_extensions: list[str] | None = None,
     chunk_size: int = 64 * 1024,
 ) -> Path:
     """Stream an upload to disk with a running size check (avoids reading whole body first)."""

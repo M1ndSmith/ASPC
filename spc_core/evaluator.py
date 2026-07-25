@@ -13,8 +13,6 @@ Chart dispatch:
 """
 from __future__ import annotations
 
-from typing import Optional
-
 from .models import ChartType, ControlLimits, Signal
 from .rules import RuleEngine
 
@@ -65,7 +63,7 @@ class Phase2Evaluator:
         self._c_minus = 0.0
 
         if self._ewma or self._cusum or self._variable:
-            self._engine: Optional[RuleEngine] = None
+            self._engine: RuleEngine | None = None
         else:
             self._engine = RuleEngine(center, sigma, ruleset)
 
@@ -82,7 +80,7 @@ class Phase2Evaluator:
         self,
         *,
         index: int = -1,
-        values: Optional[list[float]] = None,
+        values: list[float] | None = None,
     ) -> None:
         """Restore evaluator continuity after restart.
 

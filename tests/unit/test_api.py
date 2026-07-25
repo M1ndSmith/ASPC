@@ -21,8 +21,8 @@ def client(tmp_path_factory):
     os.environ["ASPC_PERSISTENCE_BACKEND"] = "sqlite"
     os.environ["ASPC_SQLITE_PATH"] = str(db)
     # Re-import config/repo cleanly
-    import apps.config as config_mod
     import apps.api.main as api_main
+    import apps.config as config_mod
 
     config_mod._config = None
     api_main.cfg = config_mod.get_config()

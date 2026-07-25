@@ -1,8 +1,6 @@
 """SPC cleaning — missing-value classifier (never silent impute)."""
 from __future__ import annotations
 
-import math
-
 from spc_core.cleaning import classify_missing, range_check
 from spc_core.models import QualityFlag
 

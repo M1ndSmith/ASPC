@@ -4,8 +4,8 @@ from __future__ import annotations
 import json
 import logging
 from collections import OrderedDict
-from datetime import datetime, timezone
-from typing import Any, Optional, Protocol
+from datetime import UTC, datetime
+from typing import Any, Protocol
 
 from spc_core.evaluator import Phase2Evaluator
 from spc_core.models import ControlLimits, Signal
@@ -30,16 +30,16 @@ class StreamRepository(Protocol):
         stream_key: str,
         ts: datetime,
         *,
-        limits_version: Optional[str],
+        limits_version: str | None,
         index: int,
         value: float,
         rule_id: str,
         rule_name: str,
         description: str,
-        side: Optional[str] = None,
+        side: str | None = None,
     ) -> bool: ...
 
-    def get_limits(self, version: str) -> Optional[dict[str, Any]]: ...
+    def get_limits(self, version: str) -> dict[str, Any] | None: ...
 
 
 class StreamEngine:
@@ -56,7 +56,7 @@ class StreamEngine:
         repo: StreamRepository,
         *,
         redis_client: Any = None,
-        redis_url: Optional[str] = None,
+        redis_url: str | None = None,
         max_streams: int = _DEFAULT_MAX_STREAMS,
         restore_state: bool = True,
     ):
@@ -179,9 +179,9 @@ class StreamEngine:
         self._evaluators.move_to_end(stream_key)
 
         if ts is None:
-            ts = datetime.now(timezone.utc)
+            ts = datetime.now(UTC)
         elif ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=UTC)
 
         limits_version = self._limits_versions[stream_key]
         self.repo.save_raw_measurement(

@@ -1,8 +1,6 @@
 """Stateful Nelson / Western Electric run-rule engine."""
 from __future__ import annotations
 
-import pytest
-
 from spc_core.rules import RuleEngine, evaluate_series
 
 

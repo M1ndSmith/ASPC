@@ -10,9 +10,9 @@ from __future__ import annotations
 import json
 import sqlite3
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 
 
@@ -21,31 +21,31 @@ class Repository(ABC):
 
     @abstractmethod
     def save_limits(self, limits_payload: dict[str, Any], version: str,
-                    chart_type: str, meta: Optional[dict] = None) -> str:
+                    chart_type: str, meta: dict | None = None) -> str:
         ...
 
     @abstractmethod
-    def get_limits(self, version: str) -> Optional[dict[str, Any]]:
+    def get_limits(self, version: str) -> dict[str, Any] | None:
         ...
 
     @abstractmethod
     def save_run(self, analysis_type: str, report: dict[str, Any],
-                 limits_version: Optional[str] = None,
-                 source_file: Optional[str] = None,
-                 user_id: Optional[str] = None) -> str:
+                 limits_version: str | None = None,
+                 source_file: str | None = None,
+                 user_id: str | None = None) -> str:
         ...
 
     @abstractmethod
-    def get_run(self, run_id: str) -> Optional[dict[str, Any]]:
+    def get_run(self, run_id: str) -> dict[str, Any] | None:
         ...
 
     @abstractmethod
-    def list_runs(self, analysis_type: Optional[str] = None, limit: int = 50) -> list[dict]:
+    def list_runs(self, analysis_type: str | None = None, limit: int = 50) -> list[dict]:
         ...
 
     @abstractmethod
     def save_audit(self, event: str, detail: dict[str, Any],
-                   user_id: Optional[str] = None) -> str:
+                   user_id: str | None = None) -> str:
         ...
 
 
@@ -93,8 +93,8 @@ class SQLiteRepository(Repository):
             )
 
     def save_limits(self, limits_payload: dict[str, Any], version: str,
-                    chart_type: str, meta: Optional[dict] = None) -> str:
-        now = datetime.now(timezone.utc).isoformat()
+                    chart_type: str, meta: dict | None = None) -> str:
+        now = datetime.now(UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO control_limits "
@@ -104,7 +104,7 @@ class SQLiteRepository(Repository):
             )
         return version
 
-    def get_limits(self, version: str) -> Optional[dict[str, Any]]:
+    def get_limits(self, version: str) -> dict[str, Any] | None:
         with self._connect() as conn:
             row = conn.execute(
                 "SELECT * FROM control_limits WHERE version = ?", (version,)
@@ -120,11 +120,11 @@ class SQLiteRepository(Repository):
         }
 
     def save_run(self, analysis_type: str, report: dict[str, Any],
-                 limits_version: Optional[str] = None,
-                 source_file: Optional[str] = None,
-                 user_id: Optional[str] = None) -> str:
+                 limits_version: str | None = None,
+                 source_file: str | None = None,
+                 user_id: str | None = None) -> str:
         run_id = str(uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 "INSERT INTO analysis_runs "
@@ -141,7 +141,7 @@ class SQLiteRepository(Repository):
         )
         return run_id
 
-    def get_run(self, run_id: str) -> Optional[dict[str, Any]]:
+    def get_run(self, run_id: str) -> dict[str, Any] | None:
         with self._connect() as conn:
             row = conn.execute(
                 "SELECT * FROM analysis_runs WHERE run_id = ?", (run_id,)
@@ -158,7 +158,7 @@ class SQLiteRepository(Repository):
             "created_at": row["created_at"],
         }
 
-    def list_runs(self, analysis_type: Optional[str] = None, limit: int = 50) -> list[dict]:
+    def list_runs(self, analysis_type: str | None = None, limit: int = 50) -> list[dict]:
         with self._connect() as conn:
             if analysis_type:
                 rows = conn.execute(
@@ -177,9 +177,9 @@ class SQLiteRepository(Repository):
         return [dict(r) for r in rows]
 
     def save_audit(self, event: str, detail: dict[str, Any],
-                   user_id: Optional[str] = None) -> str:
+                   user_id: str | None = None) -> str:
         event_id = str(uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 "INSERT INTO audit_log (event_id, event, detail, user_id, created_at) "

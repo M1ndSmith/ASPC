@@ -1,9 +1,10 @@
 """Ingest / column auto-detection (deduped from 3 legacy pipelines)."""
 from __future__ import annotations
 
+import pytest
+
 from adapters.io_files import FileReadError, read_csv, safe_filename
 from spc_core.ingest import detect_columns, ingest
-import pytest
 
 
 def test_detect_measurement_prefers_named_column():

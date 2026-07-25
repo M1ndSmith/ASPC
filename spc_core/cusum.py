@@ -12,7 +12,6 @@ Defaults: k=0.5, h=5.0 (in units of sigma).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 
@@ -30,7 +29,7 @@ class CUSUMResult:
     c_minus: list[float]
     decision_interval: float
     signals: list[Signal] = field(default_factory=list)
-    limits: Optional[ControlLimits] = None
+    limits: ControlLimits | None = None
 
 
 def _estimate_sigma_mr(values: np.ndarray) -> float:
@@ -44,8 +43,8 @@ def cusum_chart(
     values,
     k: float = 0.5,
     h: float = 5.0,
-    target: Optional[float] = None,
-    sigma: Optional[float] = None,
+    target: float | None = None,
+    sigma: float | None = None,
 ) -> CUSUMResult:
     """Compute tabular two-sided CUSUM with decision interval h·σ."""
     if k <= 0:

@@ -5,7 +5,11 @@ import numpy as np
 import pytest
 
 from spc_core.charts import analyze_control_chart, select_chart_type
-from spc_core.limits import imr_limits, xbar_r_limits, xbar_s_limits, c_limits, p_limits, np_limits, u_limits
+from spc_core.limits import (
+    imr_limits,
+    xbar_r_limits,
+    xbar_s_limits,
+)
 from spc_core.models import ChartType, DataType
 
 

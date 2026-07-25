@@ -8,8 +8,8 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 try:
@@ -111,9 +111,9 @@ class TimescaleDBRepository(Repository):
         limits_payload: dict[str, Any],
         version: str,
         chart_type: str,
-        meta: Optional[dict] = None,
+        meta: dict | None = None,
     ) -> str:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._session() as session:
             row = session.get(ControlLimitRow, version)
             if row is None:
@@ -132,7 +132,7 @@ class TimescaleDBRepository(Repository):
             session.commit()
         return version
 
-    def get_limits(self, version: str) -> Optional[dict[str, Any]]:
+    def get_limits(self, version: str) -> dict[str, Any] | None:
         with self._session() as session:
             row = session.get(ControlLimitRow, version)
             if row is None:
@@ -151,12 +151,12 @@ class TimescaleDBRepository(Repository):
         self,
         analysis_type: str,
         report: dict[str, Any],
-        limits_version: Optional[str] = None,
-        source_file: Optional[str] = None,
-        user_id: Optional[str] = None,
+        limits_version: str | None = None,
+        source_file: str | None = None,
+        user_id: str | None = None,
     ) -> str:
         run_id = str(uuid4())
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._session() as session:
             session.add(
                 AnalysisRunRow(
@@ -182,7 +182,7 @@ class TimescaleDBRepository(Repository):
         )
         return run_id
 
-    def get_run(self, run_id: str) -> Optional[dict[str, Any]]:
+    def get_run(self, run_id: str) -> dict[str, Any] | None:
         with self._session() as session:
             row = session.get(AnalysisRunRow, run_id)
             if row is None:
@@ -200,7 +200,7 @@ class TimescaleDBRepository(Repository):
             }
 
     def list_runs(
-        self, analysis_type: Optional[str] = None, limit: int = 50
+        self, analysis_type: str | None = None, limit: int = 50
     ) -> list[dict]:
         with self._session() as session:
             stmt = select(AnalysisRunRow).order_by(AnalysisRunRow.created_at.desc()).limit(
@@ -227,10 +227,10 @@ class TimescaleDBRepository(Repository):
         self,
         event: str,
         detail: dict[str, Any],
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
     ) -> str:
         event_id = str(uuid4())
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._session() as session:
             session.add(
                 AuditLogRow(
@@ -260,7 +260,7 @@ class TimescaleDBRepository(Repository):
         **meta: Any,
     ) -> None:
         if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=UTC)
         row_id = int(meta["id"]) if meta.get("id") is not None else self._measurement_id(
             stream_key, ts, float(value)
         )
@@ -334,17 +334,17 @@ class TimescaleDBRepository(Repository):
         stream_key: str,
         ts: datetime,
         *,
-        limits_version: Optional[str],
+        limits_version: str | None,
         index: int,
         value: float,
         rule_id: str,
         rule_name: str,
         description: str,
-        side: Optional[str] = None,
+        side: str | None = None,
     ) -> bool:
         """Insert an OOC event. Returns True if inserted, False if duplicate."""
         if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=UTC)
         with self._session() as session:
             if self.engine.dialect.name == "postgresql":
                 stmt = (
@@ -397,7 +397,7 @@ class TimescaleDBRepository(Repository):
 
     def list_ooc_events(
         self,
-        stream_key: Optional[str] = None,
+        stream_key: str | None = None,
         *,
         unacked_only: bool = False,
         limit: int = 100,
@@ -414,15 +414,15 @@ class TimescaleDBRepository(Repository):
         self,
         event_id: int,
         *,
-        acked_by: Optional[str] = None,
-    ) -> Optional[dict[str, Any]]:
+        acked_by: str | None = None,
+    ) -> dict[str, Any] | None:
         """Acknowledge an OOC alert by id. Returns the updated row or None if missing."""
         with self._session() as session:
             row = session.get(OocEventRow, event_id)
             if row is None:
                 return None
             row.acked = True
-            row.acked_at = datetime.now(timezone.utc)
+            row.acked_at = datetime.now(UTC)
             row.acked_by = acked_by
             session.commit()
             session.refresh(row)
@@ -432,9 +432,9 @@ class TimescaleDBRepository(Repository):
         self,
         run_id: str,
         *,
-        cpk: Optional[float] = None,
-        ppk: Optional[float] = None,
-        sigma_level: Optional[float] = None,
+        cpk: float | None = None,
+        ppk: float | None = None,
+        sigma_level: float | None = None,
     ) -> int:
         with self._session() as session:
             row = CapabilityHistoryRow(
@@ -442,7 +442,7 @@ class TimescaleDBRepository(Repository):
                 cpk=cpk,
                 ppk=ppk,
                 sigma_level=sigma_level,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             session.add(row)
             session.commit()
@@ -453,14 +453,14 @@ class TimescaleDBRepository(Repository):
         self,
         stream_key: str,
         *,
-        topic: Optional[str] = None,
-        limits_version: Optional[str] = None,
-        chart_type: Optional[str] = None,
+        topic: str | None = None,
+        limits_version: str | None = None,
+        chart_type: str | None = None,
         ruleset: str = "nelson",
         active: bool = True,
-        meta: Optional[dict] = None,
+        meta: dict | None = None,
     ) -> str:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._session() as session:
             row = session.get(StreamRegistryRow, stream_key)
             if row is None:
@@ -490,7 +490,7 @@ class TimescaleDBRepository(Repository):
             session.commit()
         return stream_key
 
-    def get_stream(self, stream_key: str) -> Optional[dict[str, Any]]:
+    def get_stream(self, stream_key: str) -> dict[str, Any] | None:
         with self._session() as session:
             row = session.get(StreamRegistryRow, stream_key)
             if row is None:

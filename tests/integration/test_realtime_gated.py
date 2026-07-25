@@ -5,11 +5,13 @@ import os
 
 import pytest
 
-
-pytestmark = pytest.mark.skipif(
-    os.environ.get("ASPC_INTEGRATION") != "1",
-    reason="Set ASPC_INTEGRATION=1 with compose stack up to run",
-)
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        os.environ.get("ASPC_INTEGRATION") != "1",
+        reason="Set ASPC_INTEGRATION=1 with compose stack up to run",
+    ),
+]
 
 
 def test_timescale_roundtrip():

@@ -9,9 +9,10 @@ import asyncio
 import json
 import queue
 import threading
+from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, AsyncIterator, Iterator, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from adapters.stream import ObservationSource
 
@@ -46,7 +47,7 @@ def _parse_payload(payload: bytes | str | dict, *, default_key: str = "default")
             # Bare numeric payload
             return Observation(
                 key=default_key,
-                ts=datetime.now(timezone.utc),
+                ts=datetime.now(UTC),
                 value=float(text),
                 raw={"value": float(text)},
             )
@@ -54,7 +55,7 @@ def _parse_payload(payload: bytes | str | dict, *, default_key: str = "default")
     if not isinstance(data, dict):
         return Observation(
             key=default_key,
-            ts=datetime.now(timezone.utc),
+            ts=datetime.now(UTC),
             value=float(data),
             raw={"value": float(data)},
         )
@@ -62,15 +63,15 @@ def _parse_payload(payload: bytes | str | dict, *, default_key: str = "default")
     key = str(data.get("key") or data.get("stream_key") or data.get("topic") or default_key)
     raw_ts = data.get("ts") or data.get("timestamp") or data.get("time")
     if raw_ts is None:
-        ts = datetime.now(timezone.utc)
+        ts = datetime.now(UTC)
     elif isinstance(raw_ts, datetime):
-        ts = raw_ts if raw_ts.tzinfo else raw_ts.replace(tzinfo=timezone.utc)
+        ts = raw_ts if raw_ts.tzinfo else raw_ts.replace(tzinfo=UTC)
     elif isinstance(raw_ts, (int, float)):
         # Treat large numbers as ms epoch
         epoch = float(raw_ts)
         if epoch > 1e12:
             epoch /= 1000.0
-        ts = datetime.fromtimestamp(epoch, tz=timezone.utc)
+        ts = datetime.fromtimestamp(epoch, tz=UTC)
     else:
         ts = datetime.fromisoformat(str(raw_ts).replace("Z", "+00:00"))
 
@@ -88,7 +89,7 @@ class _AsyncSourceBase:
     async def __aiter__(self) -> AsyncIterator[dict[str, Any]]:
         raise TypeError(f"{type(self).__name__} must implement async __aiter__")
 
-    def iter_sync(self, *, timeout: Optional[float] = None) -> Iterator[dict[str, Any]]:
+    def iter_sync(self, *, timeout: float | None = None) -> Iterator[dict[str, Any]]:
         """Yield ``{key, value, timestamp}`` dicts from a background async consumer."""
         q: queue.Queue[dict[str, Any] | BaseException | None] = queue.Queue(maxsize=256)
         stop = threading.Event()
@@ -213,9 +214,9 @@ class MQTTSource(_AsyncSourceBase, ObservationSource):
         topic: str,
         *,
         port: int = 1883,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        default_key: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
+        default_key: str | None = None,
     ):
         self._backend: str
         try:
@@ -241,13 +242,13 @@ class MQTTSource(_AsyncSourceBase, ObservationSource):
         for msg in self.iter_sync():
             yield float(msg["value"])
 
-    def iter_sync(self, *, timeout: Optional[float] = None) -> Iterator[dict[str, Any]]:
+    def iter_sync(self, *, timeout: float | None = None) -> Iterator[dict[str, Any]]:
         if self._backend == "paho":
             yield from self._iter_paho(timeout=timeout)
             return
         yield from super().iter_sync(timeout=timeout)
 
-    def _iter_paho(self, *, timeout: Optional[float] = None) -> Iterator[dict[str, Any]]:
+    def _iter_paho(self, *, timeout: float | None = None) -> Iterator[dict[str, Any]]:
         import time as _time
 
         import paho.mqtt.client as mqtt

@@ -1,8 +1,8 @@
 """Unit tests for StreamEngine OOC detection with a fake in-memory repository."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from adapters.stream_engine import StreamEngine
 from spc_core.limits import imr_limits
@@ -27,13 +27,13 @@ class FakeStreamRepo:
         stream_key: str,
         ts: datetime,
         *,
-        limits_version: Optional[str],
+        limits_version: str | None,
         index: int,
         value: float,
         rule_id: str,
         rule_name: str,
         description: str,
-        side: Optional[str] = None,
+        side: str | None = None,
     ) -> bool:
         key = (stream_key, ts.isoformat(), rule_id)
         if any(
@@ -62,7 +62,7 @@ def test_handle_observation_detects_ooc_and_persists():
     engine = StreamEngine(repo)
     engine.register("line-a", limits, ruleset="nelson")
 
-    ts = datetime(2026, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+    ts = datetime(2026, 1, 15, 12, 0, 0, tzinfo=UTC)
     # In-control point
     signals = engine.handle_observation("line-a", 10.0, ts)
     assert signals == []
@@ -71,7 +71,7 @@ def test_handle_observation_detects_ooc_and_persists():
     assert repo.ooc == []
 
     # Beyond UCL — must fire rule 1
-    ooc_ts = datetime(2026, 1, 15, 12, 0, 1, tzinfo=timezone.utc)
+    ooc_ts = datetime(2026, 1, 15, 12, 0, 1, tzinfo=UTC)
     spike = float(limits.primary.ucl) + 10.0
     signals = engine.handle_observation("line-a", spike, ooc_ts)
     assert any(s.rule_id == "1" for s in signals)
@@ -87,7 +87,7 @@ def test_ooc_writes_are_idempotent():
     engine = StreamEngine(repo)
     engine.register("line-b", limits)
 
-    ts = datetime(2026, 1, 15, 13, 0, 0, tzinfo=timezone.utc)
+    ts = datetime(2026, 1, 15, 13, 0, 0, tzinfo=UTC)
     spike = float(limits.primary.ucl) + 5.0
     s1 = engine.handle_observation("line-b", spike, ts)
     n_ooc = len(repo.ooc)
@@ -146,7 +146,7 @@ def test_restore_evaluator_index_after_reregister():
     repo = RestoringRepo()
     engine = StreamEngine(repo)
     engine.register("line-d", limits)
-    ts0 = datetime(2026, 1, 15, 14, 0, 0, tzinfo=timezone.utc)
+    ts0 = datetime(2026, 1, 15, 14, 0, 0, tzinfo=UTC)
     for i in range(5):
         engine.handle_observation(
             "line-d", 10.0, ts0.replace(second=i)
@@ -164,8 +164,9 @@ def test_restore_evaluator_index_after_reregister():
 
 
 def test_sqlite_repo_rejected_by_stream_engine():
-    from adapters.persistence import SQLiteRepository
     import pytest
+
+    from adapters.persistence import SQLiteRepository
 
     repo = SQLiteRepository(":memory:")
     with pytest.raises(TypeError, match="streaming"):
