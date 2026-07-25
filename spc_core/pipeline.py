@@ -45,6 +45,7 @@ class PipelineResult:
     transform: Optional[TransformResult] = None
     msa: Optional[GageRRResult] = None
     stopped: bool = False
+    frozen: bool = True
     chart_route: str = "shewhart"
 
     @property
@@ -204,22 +205,35 @@ def establish(
                     reason=f"Non-normal; transform {transform.label} restored normality.",
                     detail={"transform": transform.applied, "lambda": transform.lam},
                 ))
-            elif force_wheeler or True:
-                # Wheeler robust path: I-MR + points-outside-only.
-                active_chart = ChartType.I_MR
+            else:
+                # Non-normal after transform: Wheeler robust path (points-outside only).
+                # Never flatten subgrouped Phase I data to I-MR — that destroys
+                # within-subgroup variance structure. Keep Xbar-R/S and only switch
+                # the ruleset. force_wheeler forces I-MR only when there are no subgroups.
                 active_ruleset = "wheeler"
                 dist_flag = DistributionFlag.NON_NORMAL_RAW
                 route = "wheeler"
+                if subgroup_ids is not None:
+                    chart_note = "subgroup chart preserved; Wheeler ruleset only"
+                elif force_wheeler or active_chart is None:
+                    active_chart = ChartType.I_MR
+                    chart_note = "I-MR, points-outside-limits only"
+                else:
+                    chart_note = f"{active_chart.value}, Wheeler ruleset"
                 gates.append(Gate(
                     step="normality", status="warn",
                     reason=(
                         "Non-normal after transform; using Wheeler robust path "
-                        "(I-MR, points-outside-limits only)."
+                        f"({chart_note})."
                     ),
-                    detail={"transform_tried": transform.applied if transform else None},
+                    detail={
+                        "transform_tried": transform.applied if transform else None,
+                        "force_wheeler": force_wheeler,
+                        "subgroup_preserved": subgroup_ids is not None,
+                    },
                 ))
 
-    # ---- 5. Chart ----
+    # ---- 5. Chart (always produced for diagnostics, even when STOP gates fired) ----
     chart = analyze_control_chart(
         clean if dist_flag == DistributionFlag.TRANSFORMED else working[~np.isnan(working)],
         subgroup_ids=subgroup_ids,
@@ -244,18 +258,34 @@ def establish(
         },
     ))
 
-    # ---- 6. Freeze gate ----
-    gates.append(Gate(
-        step="freeze", status="ok",
-        reason=f"Phase I limits frozen with version hash {chart.limits.version}.",
-        detail={"limits_version": chart.limits.version},
-    ))
-
+    # ---- 6. Freeze gate — STOP blocks freezing ----
     stopped = any(g.status == "stop" for g in gates)
+    frozen = not stopped
+    if frozen:
+        gates.append(Gate(
+            step="freeze", status="ok",
+            reason=f"Phase I limits frozen with version hash {chart.limits.version}.",
+            detail={"limits_version": chart.limits.version, "frozen": True},
+        ))
+    else:
+        stop_steps = [g.step for g in gates if g.status == "stop"]
+        gates.append(Gate(
+            step="freeze", status="blocked",
+            reason=(
+                "Phase I limits NOT frozen: STOP gate(s) fired "
+                f"({', '.join(stop_steps)}). Chart is diagnostic only."
+            ),
+            detail={
+                "limits_version": chart.limits.version,
+                "frozen": False,
+                "stop_steps": stop_steps,
+            },
+        ))
+
     return PipelineResult(
         chart=chart, gates=gates, normality=normality, autocorrelation=acf,
         multimodal=multimodal, transform=transform, msa=msa_result,
-        stopped=stopped, chart_route=route,
+        stopped=stopped, frozen=frozen, chart_route=route,
     )
 
 
@@ -325,11 +355,15 @@ def phase1_checklist(
         f"{n_pts} points/subgroups (need >= {min_subgroups}).",
     )
 
-    # 7. Limits frozen with version hash
+    # 7. Limits frozen with version hash (blocked when STOP gates fired)
     _add(
         "limits_frozen",
-        bool(pipeline.chart.limits.version),
-        f"Limits version {pipeline.chart.limits.version}.",
+        pipeline.frozen and bool(pipeline.chart.limits.version),
+        (
+            f"Limits version {pipeline.chart.limits.version}."
+            if pipeline.frozen
+            else "Limits not frozen — STOP gate(s) blocked Phase I freeze."
+        ),
     )
 
     # 8. Transform documented

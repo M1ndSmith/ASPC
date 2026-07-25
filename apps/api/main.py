@@ -332,13 +332,23 @@ async def analyze_cc(
     )
     report_dict = report.model_dump(mode="json")
 
-    repo.save_limits(
-        report_dict["limits"], report.limits.version,
-        report.chart_type.value, meta={"source_file": str(path)},
-    )
+    limits_meta = {
+        "source_file": str(path),
+        "frozen": pipeline.frozen,
+        "stopped": pipeline.stopped,
+        "checklist_passed": bool(checklist.get("passed")),
+        "limits_version": report.limits.version,
+    }
+    # Only persist freezeable limits — STOP / failed checklist must not produce
+    # a go-live-eligible limits version.
+    if pipeline.frozen:
+        repo.save_limits(
+            report_dict["limits"], report.limits.version,
+            report.chart_type.value, meta=limits_meta,
+        )
     run_id = repo.save_run(
         "control_chart", report_dict,
-        limits_version=report.limits.version,
+        limits_version=report.limits.version if pipeline.frozen else None,
         source_file=str(path),
         user_id=user_id or _user.get("username"),
     )
@@ -560,6 +570,19 @@ async def go_live(
     stored = repo.get_limits(body.limits_version)
     if not stored:
         raise HTTPException(404, f"Limits version not found: {body.limits_version}")
+    meta = stored.get("meta") or {}
+    if meta.get("frozen") is False or meta.get("stopped") is True:
+        raise HTTPException(
+            409,
+            "Cannot go-live: Phase I limits were not frozen (STOP gate fired). "
+            "Re-run Phase I after resolving stop conditions.",
+        )
+    if meta.get("checklist_passed") is False:
+        raise HTTPException(
+            409,
+            "Cannot go-live: Phase I checklist did not pass. "
+            "Resolve checklist items before enabling Phase II.",
+        )
     ruleset = body.ruleset or cfg.ruleset
     repo.register_stream(
         stream_key,

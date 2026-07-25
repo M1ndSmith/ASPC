@@ -109,13 +109,17 @@ def gage_rr_anova(parts, operators, measurements, tolerance: Optional[float] = N
     n_parts, n_ops = len(uparts), len(uops)
     balanced, n_trials = _is_balanced(parts, operators, n_parts, n_ops)
     if not balanced:
-        # Fall back to minimum cell count for a conservative balanced subset warning.
-        counts = _cell_counts(parts, operators)
-        if not counts:
-            raise ValueError("Gage R&R requires at least one trial per part-operator cell")
-        n_trials = min(counts.values())
-        if n_trials < 1:
-            raise ValueError("Gage R&R requires at least one trial per part-operator cell")
+        # Balanced ANOVA formulas are invalid on unbalanced cells — fall back to
+        # the range method rather than returning silently wrong variance components.
+        result = gage_rr_range(parts, operators, measurements, tolerance=tolerance)
+        result.detail = {
+            **(result.detail or {}),
+            "balanced": False,
+            "anova_skipped": True,
+            "reason": "Unbalanced design; ANOVA formulas not applied — used range method.",
+        }
+        result.method = "Range (unbalanced fallback)"
+        return result
     n = len(y)
     if n_trials < 1:
         raise ValueError("Gage R&R requires at least one trial per part-operator cell")

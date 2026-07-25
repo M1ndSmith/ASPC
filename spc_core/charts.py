@@ -247,6 +247,8 @@ def analyze_control_chart(
 
     elif chart_type == ChartType.P:
         n = np.asarray(sample_sizes, dtype=float)
+        if np.any(n <= 0):
+            raise ValueError("P chart sample sizes must be > 0")
         limits = L.p_limits(arr, n)
         plotted = (arr / n).tolist()
         dtype = DataType.ATTRIBUTE
@@ -265,6 +267,8 @@ def analyze_control_chart(
 
     elif chart_type == ChartType.U:
         o = np.asarray(opportunities, dtype=float)
+        if np.any(o <= 0):
+            raise ValueError("U chart opportunities must be > 0")
         limits = L.u_limits(arr, o)
         plotted = (arr / o).tolist()
         dtype = DataType.ATTRIBUTE
@@ -274,16 +278,22 @@ def analyze_control_chart(
 
     # ---- run-rule signals (Shewhart paths) ----
     if chart_type not in (ChartType.EWMA, ChartType.CUSUM):
-        if chart_type in (ChartType.P, ChartType.U):
+        primary = limits.primary
+        # Variable-limit charts (P/U, variable-n Xbar): use Phase2Evaluator so
+        # per-point UCL/LCL are honoured. Fixed-limit charts use RuleEngine.
+        if (
+            chart_type in (ChartType.P, ChartType.U)
+            or isinstance(primary.ucl, list)
+            or isinstance(primary.lcl, list)
+        ):
             ev = Phase2Evaluator(limits, ruleset=ruleset)
             signals = []
             for v in plotted:
                 signals.extend(ev.observe(float(v)))
         else:
-            primary = limits.primary
             center = primary.center
             sigma = limits.sigma if (limits.sigma and limits.sigma > 0) else (
-                (float(primary.ucl) - center) / 3.0 if not isinstance(primary.ucl, list) else 0.0
+                (float(primary.ucl) - center) / 3.0
             )
             signals = R.evaluate_series(plotted, center=center, sigma=sigma, ruleset=ruleset)
 

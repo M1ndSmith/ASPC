@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 
 class ChartType(str, Enum):
@@ -104,8 +104,13 @@ class ControlLimits(BaseModel):
         """The component the run-rules are evaluated against (first declared component)."""
         return next(iter(self.components.values()))
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def version(self) -> str:
+        """Content hash so any downstream record can prove which limits it used.
+
+        Serialized by ``model_dump()`` via pydantic ``computed_field``.
+        """
         payload = {
             "chart_type": self.chart_type.value,
             "subgroup_size": self.subgroup_size,

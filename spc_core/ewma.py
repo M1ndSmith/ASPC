@@ -61,6 +61,8 @@ def ewma_chart(
 
     tgt = float(target) if target is not None else float(arr.mean())
     sig = float(sigma) if sigma is not None and sigma > 0 else _estimate_sigma_mr(arr)
+    if sig <= 0:
+        raise ValueError("EWMA requires a positive process sigma")
 
     z: list[float] = []
     ucl: list[float] = []
