@@ -119,3 +119,54 @@ def test_unregistered_stream_raises():
         assert False, "expected KeyError"
     except KeyError:
         pass
+
+
+def test_unregister_evicts_state():
+    limits = imr_limits([10.0, 10.1, 9.9, 10.05, 10.0, 10.02, 9.98, 10.01] * 4)
+    repo = FakeStreamRepo()
+    engine = StreamEngine(repo)
+    engine.register("line-c", limits)
+    assert "line-c" in engine.registered_keys()
+    engine.unregister("line-c")
+    assert "line-c" not in engine.registered_keys()
+
+
+def test_restore_evaluator_index_after_reregister():
+    """Re-registering should seed index from prior raw measurements."""
+    limits = imr_limits([10.0, 10.1, 9.9, 10.05, 10.0, 10.02, 9.98, 10.01] * 4)
+
+    class RestoringRepo(FakeStreamRepo):
+        def count_raw_measurements(self, stream_key: str) -> int:
+            return sum(1 for r in self.raw if r["stream_key"] == stream_key)
+
+        def recent_raw_measurements(self, stream_key: str, *, limit: int = 15):
+            rows = [r for r in self.raw if r["stream_key"] == stream_key]
+            return rows[-limit:]
+
+    repo = RestoringRepo()
+    engine = StreamEngine(repo)
+    engine.register("line-d", limits)
+    ts0 = datetime(2026, 1, 15, 14, 0, 0, tzinfo=timezone.utc)
+    for i in range(5):
+        engine.handle_observation(
+            "line-d", 10.0, ts0.replace(second=i)
+        )
+    assert engine._evaluators["line-d"].index == 4
+
+    # Simulate restart
+    engine2 = StreamEngine(repo)
+    engine2.register("line-d", limits)
+    assert engine2._evaluators["line-d"].index == 4
+
+    # Next observation continues at 5
+    engine2.handle_observation("line-d", 10.0, ts0.replace(second=10))
+    assert engine2._evaluators["line-d"].index == 5
+
+
+def test_sqlite_repo_rejected_by_stream_engine():
+    from adapters.persistence import SQLiteRepository
+    import pytest
+
+    repo = SQLiteRepository(":memory:")
+    with pytest.raises(TypeError, match="streaming"):
+        StreamEngine(repo)

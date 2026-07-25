@@ -50,3 +50,13 @@ def get_repository(
         f"Unknown persistence backend '{backend}'. "
         "Use 'sqlite' or 'timescale'."
     )
+
+
+def require_streaming_repository(repo: Repository) -> Repository:
+    """Raise if ``repo`` cannot support the Phase II stream engine."""
+    if not hasattr(repo, "save_raw_measurement"):
+        raise TypeError(
+            f"{type(repo).__name__} does not support streaming measurements. "
+            "Set ASPC_PERSISTENCE_BACKEND=timescale (SQLite has no Tier-1/Tier-2 tables)."
+        )
+    return repo

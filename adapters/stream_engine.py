@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import OrderedDict
 from datetime import datetime, timezone
 from typing import Any, Optional, Protocol
 
@@ -10,6 +11,11 @@ from spc_core.evaluator import Phase2Evaluator
 from spc_core.models import ControlLimits, Signal
 
 logger = logging.getLogger(__name__)
+
+# Warm this many prior points into the rule buffer after restart.
+_RULE_WARMUP = 15
+# Soft cap on in-memory stream state (LRU eviction of inactive keys).
+_DEFAULT_MAX_STREAMS = 10_000
 
 
 class StreamRepository(Protocol):
@@ -51,14 +57,23 @@ class StreamEngine:
         *,
         redis_client: Any = None,
         redis_url: Optional[str] = None,
+        max_streams: int = _DEFAULT_MAX_STREAMS,
+        restore_state: bool = True,
     ):
+        if not hasattr(repo, "save_raw_measurement"):
+            raise TypeError(
+                f"{type(repo).__name__} does not support streaming "
+                "(missing save_raw_measurement). Use the TimescaleDB backend."
+            )
         self.repo = repo
-        self._evaluators: dict[str, Phase2Evaluator] = {}
+        self._evaluators: OrderedDict[str, Phase2Evaluator] = OrderedDict()
         self._limits: dict[str, ControlLimits] = {}
         self._limits_versions: dict[str, str] = {}
         self._rulesets: dict[str, str] = {}
         self._redis = redis_client
         self._redis_url = redis_url
+        self._max_streams = max(1, int(max_streams))
+        self._restore_state = restore_state
 
     def _get_redis(self) -> Any:
         if self._redis is not None:
@@ -79,11 +94,57 @@ class StreamEngine:
         limits: ControlLimits,
         ruleset: str = "nelson",
     ) -> None:
-        """Attach a frozen Phase I limit set to ``stream_key``."""
-        self._evaluators[stream_key] = Phase2Evaluator(limits, ruleset=ruleset)
+        """Attach a frozen Phase I limit set to ``stream_key``.
+
+        When the repository can supply recent measurements, the evaluator index
+        and rule buffer are restored so a process restart does not reset Phase II.
+        """
+        if stream_key in self._evaluators:
+            self.unregister(stream_key)
+
+        while len(self._evaluators) >= self._max_streams:
+            oldest, _ = self._evaluators.popitem(last=False)
+            self._limits.pop(oldest, None)
+            self._limits_versions.pop(oldest, None)
+            self._rulesets.pop(oldest, None)
+            logger.warning("Evicted stream %s (max_streams=%s)", oldest, self._max_streams)
+
+        ev = Phase2Evaluator(limits, ruleset=ruleset)
+        if self._restore_state:
+            self._restore_evaluator(stream_key, ev)
+        self._evaluators[stream_key] = ev
         self._limits[stream_key] = limits
         self._limits_versions[stream_key] = limits.version
         self._rulesets[stream_key] = ruleset
+
+    def _restore_evaluator(self, stream_key: str, ev: Phase2Evaluator) -> None:
+        count_fn = getattr(self.repo, "count_raw_measurements", None)
+        recent_fn = getattr(self.repo, "recent_raw_measurements", None)
+        if not callable(count_fn) or not callable(recent_fn):
+            return
+        try:
+            count = int(count_fn(stream_key))
+            recent = recent_fn(stream_key, limit=_RULE_WARMUP)
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to restore evaluator state for %s", stream_key)
+            return
+        if count <= 0:
+            return
+        values = [float(r["value"]) for r in recent]
+        ev.seed_state(index=count - 1, values=values)
+        logger.info(
+            "Restored stream %s evaluator at index=%s (warmed %s points)",
+            stream_key,
+            count - 1,
+            len(values),
+        )
+
+    def unregister(self, stream_key: str) -> None:
+        """Drop in-memory evaluator state for a deactivated stream."""
+        self._evaluators.pop(stream_key, None)
+        self._limits.pop(stream_key, None)
+        self._limits_versions.pop(stream_key, None)
+        self._rulesets.pop(stream_key, None)
 
     def load_limits(
         self,
@@ -114,6 +175,9 @@ class StreamEngine:
         ev = self._evaluators.get(stream_key)
         if ev is None:
             raise KeyError(f"Stream '{stream_key}' is not registered")
+        # Touch LRU order
+        self._evaluators.move_to_end(stream_key)
+
         if ts is None:
             ts = datetime.now(timezone.utc)
         elif ts.tzinfo is None:
@@ -132,7 +196,7 @@ class StreamEngine:
 
         signals = ev.observe(float(value))
         for sig in signals:
-            self.repo.save_ooc_event(
+            inserted = self.repo.save_ooc_event(
                 stream_key,
                 ts,
                 limits_version=limits_version,
@@ -143,18 +207,25 @@ class StreamEngine:
                 description=sig.description,
                 side=sig.side,
             )
+            if not inserted:
+                logger.debug(
+                    "Duplicate OOC suppressed %s rule=%s ts=%s",
+                    stream_key,
+                    sig.rule_id,
+                    ts,
+                )
 
         primary = self._limits[stream_key].primary
-        # Scalar limits for the Live dashboard (variable P/U charts use first/index 0).
         ucl = primary.ucl_at(0) if isinstance(primary.ucl, list) else primary.ucl
         lcl = primary.lcl_at(0) if isinstance(primary.lcl, list) else primary.lcl
+        # Always publish the stream index so the dashboard can map markers.
         payload = {
             "type": "point",
             "stream_key": stream_key,
             "value": float(value),
             "timestamp": ts.isoformat(),
             "ts": ts.isoformat(),
-            "index": signals[0].index if signals else None,
+            "index": ev.index,
             "ucl": float(ucl) if ucl is not None else None,
             "center": float(primary.center),
             "lcl": float(lcl) if lcl is not None else None,
@@ -207,6 +278,14 @@ class StreamEngine:
             client.publish(channel, json.dumps(payload, default=str))
         except Exception:  # noqa: BLE001 — live publish must not break evaluation
             logger.exception("Failed to publish to Redis channel %s", channel)
+
+    def close(self) -> None:
+        if self._redis is not None:
+            try:
+                self._redis.close()
+            except Exception:  # noqa: BLE001
+                pass
+            self._redis = None
 
 
 def _limits_from_payload(payload: dict[str, Any]) -> ControlLimits:

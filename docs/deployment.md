@@ -5,11 +5,13 @@
 Compose file: [`deploy/compose/docker-compose.yml`](../deploy/compose/docker-compose.yml).
 
 ```bash
-docker compose -f deploy/compose/docker-compose.yml up -d --build
+cp deploy/compose/.env.example deploy/compose/.env   # edit secrets
+docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env up -d --build
 ```
 
 | Service | Role | Host port |
 |---------|------|-----------|
+| `migrate` | `alembic upgrade head` (runs once before api/stream-engine) | — |
 | `api` | FastAPI | 8000 |
 | `frontend` | Next.js dashboard | 3000 |
 | `redpanda` | Kafka-compatible broker | 19092 (external), 9644 admin |
@@ -20,14 +22,13 @@ docker compose -f deploy/compose/docker-compose.yml up -d --build
 | `mqtt-bridge` | MQTT → Redpanda | — |
 | `grafana` | Ops dashboards (`--profile ops`) | 3001 |
 
-Default API env in Compose:
+Secrets come from `deploy/compose/.env` (never commit real values):
 
-- `ASPC_PERSISTENCE_BACKEND=timescale`
-- `ASPC_TIMESCALE_DSN=postgresql+asyncpg://aspc:aspc@timescaledb:5432/aspc`
-- `ASPC_REDIS_URL=redis://redis:6379/0`
-- `ASPC_KAFKA_BOOTSTRAP=redpanda:9092`
-- `ASPC_API_KEYS=demokey`
+- `POSTGRES_PASSWORD`, `ASPC_JWT_SECRET`, `ASPC_API_KEYS`, `ASPC_ADMIN_PASSWORD`
 - `ASPC_CORS_ORIGINS=http://localhost:3000`
+- `ASPC_TSDB_INIT=0` on api/stream-engine so only the migrate service applies schema
+
+Deferred ops (configure in your environment, not shipped as defaults): Mosquitto TLS/auth, Kafka DLQ, continuous aggregates, image digest pins.
 
 Frontend: `NEXT_PUBLIC_API_URL=http://localhost:8000`, `NEXT_PUBLIC_WS_URL=ws://localhost:8000`.
 

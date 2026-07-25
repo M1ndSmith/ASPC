@@ -241,6 +241,7 @@ class AnalyzeResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     version: str = "2.0.0"
+    checks: Optional[dict[str, str]] = None
 
 
 class TokenResponse(BaseModel):
@@ -327,7 +328,27 @@ async def root():
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    return HealthResponse(status="healthy")
+    checks: dict[str, str] = {"api": "ok"}
+    try:
+        if hasattr(repo, "list_runs"):
+            repo.list_runs(limit=1)
+        checks["persistence"] = "ok"
+    except Exception as exc:  # noqa: BLE001
+        checks["persistence"] = f"error: {exc}"
+    try:
+        import redis as redis_lib
+
+        r = redis_lib.Redis.from_url(cfg.redis_url, socket_connect_timeout=1)
+        r.ping()
+        r.close()
+        checks["redis"] = "ok"
+    except Exception as exc:  # noqa: BLE001
+        checks["redis"] = f"unavailable: {exc}"
+
+    degraded = any(
+        not v.startswith(("ok", "unavailable")) for k, v in checks.items() if k != "api"
+    )
+    return HealthResponse(status="degraded" if degraded else "healthy", checks=checks)
 
 
 @app.get("/metrics")

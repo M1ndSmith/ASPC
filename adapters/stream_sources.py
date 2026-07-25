@@ -158,27 +158,46 @@ class KafkaSource(_AsyncSourceBase, ObservationSource):
     async def __aiter__(self) -> AsyncIterator[dict[str, Any]]:
         from aiokafka import AIOKafkaConsumer
 
-        consumer = AIOKafkaConsumer(
-            self.topic,
-            bootstrap_servers=self.bootstrap_servers,
-            group_id=self.group_id,
-            auto_offset_reset=self.auto_offset_reset,
-            enable_auto_commit=True,
-        )
-        self._consumer = consumer
-        await consumer.start()
-        try:
-            async for msg in consumer:
-                key_hint = (
-                    msg.key.decode("utf-8")
-                    if isinstance(msg.key, (bytes, bytearray))
-                    else (str(msg.key) if msg.key is not None else self.default_key)
-                )
-                obs = _parse_payload(msg.value or b"", default_key=key_hint or self.default_key)
-                yield obs.as_dict()
-        finally:
-            await consumer.stop()
-            self._consumer = None
+        backoff = 1.0
+        while True:
+            consumer = AIOKafkaConsumer(
+                self.topic,
+                bootstrap_servers=self.bootstrap_servers,
+                group_id=self.group_id,
+                auto_offset_reset=self.auto_offset_reset,
+                enable_auto_commit=False,
+            )
+            self._consumer = consumer
+            try:
+                await consumer.start()
+                backoff = 1.0
+                async for msg in consumer:
+                    key_hint = (
+                        msg.key.decode("utf-8")
+                        if isinstance(msg.key, (bytes, bytearray))
+                        else (str(msg.key) if msg.key is not None else self.default_key)
+                    )
+                    try:
+                        obs = _parse_payload(
+                            msg.value or b"", default_key=key_hint or self.default_key
+                        )
+                    except Exception:
+                        # Poison message: commit past it so it is not retried forever
+                        await consumer.commit()
+                        raise
+                    yield obs.as_dict()
+                    await consumer.commit()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, 60.0)
+            finally:
+                try:
+                    await consumer.stop()
+                except Exception:
+                    pass
+                self._consumer = None
 
 
 class MQTTSource(_AsyncSourceBase, ObservationSource):
@@ -229,9 +248,12 @@ class MQTTSource(_AsyncSourceBase, ObservationSource):
         yield from super().iter_sync(timeout=timeout)
 
     def _iter_paho(self, *, timeout: Optional[float] = None) -> Iterator[dict[str, Any]]:
+        import time as _time
+
         import paho.mqtt.client as mqtt
 
         q: queue.Queue[dict[str, Any] | BaseException | None] = queue.Queue(maxsize=256)
+        stop = threading.Event()
 
         def _on_message(_client, _userdata, message) -> None:
             try:
@@ -240,17 +262,49 @@ class MQTTSource(_AsyncSourceBase, ObservationSource):
                 obs = _parse_payload(message.payload, default_key=default_key)
                 if obs.key == default_key and self.default_key is None:
                     obs = Observation(key=topic_str, ts=obs.ts, value=obs.value, raw=obs.raw)
-                q.put(obs.as_dict())
+                try:
+                    q.put(obs.as_dict(), timeout=5.0)
+                except queue.Full:
+                    pass  # drop under backpressure rather than block the network thread
             except BaseException as exc:  # noqa: BLE001
                 q.put(exc)
 
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        def _on_disconnect(client, _userdata, _flags, reason_code, _properties=None):
+            if stop.is_set():
+                return
+            # paho VERSION2 signature; reconnect with backoff in a helper thread
+            delay = 1.0
+            while not stop.is_set():
+                try:
+                    client.reconnect()
+                    client.subscribe(self.topic)
+                    return
+                except Exception:
+                    _time.sleep(delay)
+                    delay = min(delay * 2, 60.0)
+
+        try:
+            client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        except AttributeError:
+            client = mqtt.Client()
         if self.username is not None:
             client.username_pw_set(self.username, self.password)
         client.on_message = _on_message
-        client.connect(self.host, self.port)
-        client.subscribe(self.topic)
-        client.loop_start()
+        try:
+            client.on_disconnect = _on_disconnect
+        except Exception:
+            pass
+        backoff = 1.0
+        while True:
+            try:
+                client.connect(self.host, self.port)
+                client.subscribe(self.topic)
+                client.loop_start()
+                backoff = 1.0
+                break
+            except Exception:
+                _time.sleep(backoff)
+                backoff = min(backoff * 2, 60.0)
         try:
             while True:
                 item = q.get(timeout=timeout) if timeout else q.get()
@@ -258,8 +312,12 @@ class MQTTSource(_AsyncSourceBase, ObservationSource):
                     raise item
                 yield item
         finally:
+            stop.set()
             client.loop_stop()
-            client.disconnect()
+            try:
+                client.disconnect()
+            except Exception:
+                pass
 
     async def __aiter__(self) -> AsyncIterator[dict[str, Any]]:
         if self._backend != "aiomqtt":
@@ -297,15 +355,24 @@ class MQTTSource(_AsyncSourceBase, ObservationSource):
         if self.password is not None:
             kwargs["password"] = self.password
 
-        async with aiomqtt.Client(**kwargs) as client:
-            await client.subscribe(self.topic)
-            async for message in client.messages:
-                topic_str = str(message.topic)
-                default_key = self.default_key or topic_str
-                payload = message.payload
-                obs = _parse_payload(payload, default_key=default_key)
-                if obs.key == default_key and self.default_key is None:
-                    obs = Observation(
-                        key=topic_str, ts=obs.ts, value=obs.value, raw=obs.raw
-                    )
-                yield obs.as_dict()
+        backoff = 1.0
+        while True:
+            try:
+                async with aiomqtt.Client(**kwargs) as client:
+                    await client.subscribe(self.topic)
+                    backoff = 1.0
+                    async for message in client.messages:
+                        topic_str = str(message.topic)
+                        default_key = self.default_key or topic_str
+                        payload = message.payload
+                        obs = _parse_payload(payload, default_key=default_key)
+                        if obs.key == default_key and self.default_key is None:
+                            obs = Observation(
+                                key=topic_str, ts=obs.ts, value=obs.value, raw=obs.raw
+                            )
+                        yield obs.as_dict()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, 60.0)

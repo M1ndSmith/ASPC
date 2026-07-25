@@ -5,22 +5,26 @@ SQLite for local tests (tables only — no hypertables or retention policies).
 """
 from __future__ import annotations
 
+import hashlib
+import logging
 import os
-import time
 from datetime import datetime, timezone
 from typing import Any, Optional
 from uuid import uuid4
 
 try:
-    from sqlalchemy import create_engine, select, text
+    from sqlalchemy import create_engine, func, select, text
     from sqlalchemy.dialects.postgresql import insert as pg_insert
     from sqlalchemy.engine import Engine
+    from sqlalchemy.exc import IntegrityError
     from sqlalchemy.orm import Session, sessionmaker
 except ImportError as exc:  # pragma: no cover - exercised when extra missing
     raise ImportError(
         "TimescaleDB persistence requires the tsdb extra. "
         "Install with: pip install 'aspc[tsdb]'"
     ) from exc
+
+logger = logging.getLogger(__name__)
 
 from adapters.db_models import (
     AnalysisRunRow,
@@ -62,26 +66,24 @@ def init_schema(engine: Engine) -> None:
                 "'raw_measurements', 'ts', if_not_exists => TRUE)"
             )
         )
-        # Retention may already exist on re-init; ignore duplicate errors via DO block.
-        conn.execute(
-            text(
-                """
-                DO $$
-                BEGIN
-                    PERFORM add_retention_policy(
+        # Retention may already exist on re-init; log (don't swallow silently).
+        try:
+            conn.execute(
+                text(
+                    """
+                    SELECT add_retention_policy(
                         'raw_measurements',
                         INTERVAL '90 days',
                         if_not_exists => TRUE
                     );
-                EXCEPTION
-                    WHEN undefined_function THEN
-                        NULL;
-                    WHEN OTHERS THEN
-                        NULL;
-                END $$;
-                """
+                    """
+                )
             )
-        )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Timescale retention policy not applied on raw_measurements: %s",
+                exc,
+            )
 
 
 class TimescaleDBRepository(Repository):
@@ -244,6 +246,12 @@ class TimescaleDBRepository(Repository):
 
     # --- Streaming / Tier-1 / Tier-2 ----------------------------------------
 
+    @staticmethod
+    def _measurement_id(stream_key: str, ts: datetime, value: float) -> int:
+        """Deterministic id so Kafka redelivery is a no-op on the PK (id, ts)."""
+        blob = f"{stream_key}|{ts.isoformat()}|{value:.12g}".encode()
+        return int(hashlib.sha256(blob).hexdigest()[:15], 16)
+
     def save_raw_measurement(
         self,
         stream_key: str,
@@ -253,21 +261,73 @@ class TimescaleDBRepository(Repository):
     ) -> None:
         if ts.tzinfo is None:
             ts = ts.replace(tzinfo=timezone.utc)
-        row_id = int(meta.get("id") or time.time_ns())
+        row_id = int(meta["id"]) if meta.get("id") is not None else self._measurement_id(
+            stream_key, ts, float(value)
+        )
+        values = dict(
+            id=row_id,
+            stream_key=stream_key,
+            ts=ts,
+            value=float(value),
+            quality_flag=meta.get("quality_flag"),
+            machine_id=meta.get("machine_id"),
+            gage_id=meta.get("gage_id"),
+            limits_version=meta.get("limits_version"),
+        )
         with self._session() as session:
-            session.add(
-                RawMeasurementRow(
-                    id=row_id,
-                    stream_key=stream_key,
-                    ts=ts,
-                    value=float(value),
-                    quality_flag=meta.get("quality_flag"),
-                    machine_id=meta.get("machine_id"),
-                    gage_id=meta.get("gage_id"),
-                    limits_version=meta.get("limits_version"),
+            if self.engine.dialect.name == "postgresql":
+                stmt = (
+                    pg_insert(RawMeasurementRow)
+                    .values(**values)
+                    .on_conflict_do_nothing(constraint="pk_raw_measurements")
                 )
+                session.execute(stmt)
+                session.commit()
+                return
+            try:
+                session.add(RawMeasurementRow(**values))
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+
+    def count_raw_measurements(self, stream_key: str) -> int:
+        with self._session() as session:
+            return int(
+                session.scalar(
+                    select(func.count())
+                    .select_from(RawMeasurementRow)
+                    .where(RawMeasurementRow.stream_key == stream_key)
+                )
+                or 0
             )
-            session.commit()
+
+    def recent_raw_measurements(
+        self,
+        stream_key: str,
+        *,
+        limit: int = 15,
+    ) -> list[dict[str, Any]]:
+        with self._session() as session:
+            stmt = (
+                select(RawMeasurementRow)
+                .where(RawMeasurementRow.stream_key == stream_key)
+                .order_by(RawMeasurementRow.ts.desc())
+                .limit(limit)
+            )
+            rows = list(reversed(session.scalars(stmt).all()))
+            return [
+                {
+                    "id": r.id,
+                    "stream_key": r.stream_key,
+                    "ts": r.ts,
+                    "value": r.value,
+                    "quality_flag": r.quality_flag,
+                    "machine_id": r.machine_id,
+                    "gage_id": r.gage_id,
+                    "limits_version": r.limits_version,
+                }
+                for r in rows
+            ]
 
     def save_ooc_event(
         self,

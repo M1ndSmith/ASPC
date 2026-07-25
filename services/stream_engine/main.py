@@ -7,7 +7,7 @@ import signal
 import sys
 from typing import Optional
 
-from adapters.factory import get_repository
+from adapters.factory import get_repository, require_streaming_repository
 from adapters.stream_engine import StreamEngine
 from adapters.stream_sources import KafkaSource
 from apps.config import get_config
@@ -44,11 +44,15 @@ def main(argv: Optional[list[str]] = None) -> int:
     topic = args.topic or cfg.kafka_topic
     redis_url = args.redis_url or cfg.redis_url
 
-    # Prefer Timescale when configured; fall back to sqlite for local demos.
     backend = cfg.persistence_backend
     if backend == "sqlite" and cfg.timescale_dsn:
         backend = "timescale"
     repo = get_repository(cfg, backend=backend if backend != "sqlite" else cfg.persistence_backend)
+    try:
+        require_streaming_repository(repo)
+    except TypeError as exc:
+        logger.error("%s", exc)
+        return 2
 
     engine = StreamEngine(repo, redis_url=redis_url)
 
