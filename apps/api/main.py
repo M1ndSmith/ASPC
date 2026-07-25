@@ -27,6 +27,7 @@ from fastapi import (
     Header,
     HTTPException,
     Query,
+    Request,
     UploadFile,
     WebSocket,
     WebSocketDisconnect,
@@ -38,7 +39,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2Pas
 from pydantic import BaseModel, Field
 
 from adapters.factory import get_repository
-from adapters.io_files import FileReadError, load_columns, save_upload
+from adapters.io_files import FileReadError, load_columns, resolve_under, save_upload_stream
 from adapters.render_plotly import (
     render_capability_html,
     render_control_chart_html,
@@ -82,6 +83,54 @@ app.add_middleware(
 
 _bearer = HTTPBearer(auto_error=False)
 
+# Rate limiting (slowapi) — soft-fail if not installed
+try:
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from slowapi.util import get_remote_address
+
+    limiter = Limiter(key_func=get_remote_address, default_limits=[])
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    _RATE_LIMIT = True
+except ImportError:  # pragma: no cover
+    limiter = None
+    _RATE_LIMIT = False
+
+# Password hashing (bcrypt directly — passlib+bcrypt version skew is common)
+try:
+    import bcrypt as _bcrypt
+except ImportError:  # pragma: no cover
+    _bcrypt = None
+
+_admin_password_hash: bytes | None = None
+
+
+def _ensure_password_hash() -> bytes:
+    global _admin_password_hash
+    if _admin_password_hash is not None:
+        return _admin_password_hash
+    raw = cfg.admin_password
+    if _bcrypt is None:
+        _admin_password_hash = raw.encode("utf-8")
+        return _admin_password_hash
+    if raw.startswith(("$2a$", "$2b$", "$2y$")):
+        _admin_password_hash = raw.encode("utf-8")
+    else:
+        _admin_password_hash = _bcrypt.hashpw(raw.encode("utf-8"), _bcrypt.gensalt())
+    return _admin_password_hash
+
+
+def _verify_password(plain: str) -> bool:
+    stored = _ensure_password_hash()
+    if _bcrypt is None:
+        return plain.encode("utf-8") == stored
+    try:
+        return bool(_bcrypt.checkpw(plain.encode("utf-8"), stored))
+    except Exception:
+        return False
+
+
 # Prometheus metrics (optional dependency)
 try:
     from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
@@ -91,6 +140,19 @@ try:
     _PROM = True
 except ImportError:  # pragma: no cover
     _PROM = False
+
+
+@app.on_event("startup")
+def _startup_security_checks() -> None:
+    """Refuse insecure production defaults unless ASPC_DEV_INSECURE=1."""
+    _ensure_password_hash()
+    if not cfg.auth_enabled:
+        return
+    if cfg.jwt_secret == "change-me-in-production" and not cfg.dev_insecure:
+        raise RuntimeError(
+            "ASPC_JWT_SECRET is still the default 'change-me-in-production'. "
+            "Set a strong secret, or set ASPC_DEV_INSECURE=1 for local development only."
+        )
 
 
 # ---- auth helpers -------------------------------------------------------------
@@ -105,6 +167,21 @@ def _create_access_token(subject: str) -> str:
     return jwt.encode(payload, cfg.jwt_secret, algorithm=cfg.jwt_algorithm)
 
 
+def _decode_token(token: str) -> dict[str, Any]:
+    try:
+        from jose import JWTError, jwt
+    except ImportError as exc:  # pragma: no cover
+        raise HTTPException(500, "python-jose required for JWT auth") from exc
+    try:
+        data = jwt.decode(token, cfg.jwt_secret, algorithms=[cfg.jwt_algorithm])
+    except JWTError as exc:
+        raise HTTPException(401, "Invalid or expired token") from exc
+    username = data.get("sub")
+    if not username:
+        raise HTTPException(401, "Invalid token")
+    return {"username": username, "auth": "jwt"}
+
+
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
 ) -> dict[str, Any]:
@@ -117,37 +194,37 @@ def get_current_user(
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    try:
-        from jose import JWTError, jwt
-    except ImportError as exc:  # pragma: no cover
-        raise HTTPException(500, "python-jose required for JWT auth") from exc
-    try:
-        data = jwt.decode(
-            credentials.credentials,
-            cfg.jwt_secret,
-            algorithms=[cfg.jwt_algorithm],
-        )
-        username = data.get("sub")
-        if not username:
-            raise HTTPException(401, "Invalid token")
-        return {"username": username, "auth": "jwt"}
-    except JWTError as exc:
-        raise HTTPException(401, "Invalid or expired token") from exc
+    return _decode_token(credentials.credentials)
 
 
 def require_api_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")) -> str:
-    """Require X-API-Key for ingest / stream mutation endpoints."""
+    """Require X-API-Key for ingest / stream mutation endpoints.
+
+    Fail-closed when no keys are configured, unless ``ASPC_DEV_INSECURE=1``.
+    """
     keys = cfg.api_keys
-    # Also accept env-only keys if yaml list empty
     if not keys:
         env_keys = os.getenv("ASPC_API_KEYS", "")
         keys = [k.strip() for k in env_keys.split(",") if k.strip()]
     if not keys:
-        # Dev mode: no keys configured — allow with warning header path
-        return x_api_key or "dev"
+        if cfg.dev_insecure:
+            return x_api_key or "dev"
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "API keys not configured. Set ASPC_API_KEYS, or ASPC_DEV_INSECURE=1 for local dev.",
+        )
     if not x_api_key or x_api_key not in keys:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or missing X-API-Key")
     return x_api_key
+
+
+_RUN_ID_RE = __import__("re").compile(r"^[A-Za-z0-9_-]+$")
+
+
+def _safe_run_id(run_id: str) -> str:
+    if not _RUN_ID_RE.match(run_id):
+        raise HTTPException(400, "Invalid run_id")
+    return run_id
 
 
 # ---- response models ----------------------------------------------------------
@@ -187,10 +264,9 @@ class GoLiveRequest(BaseModel):
 # ---- helpers ------------------------------------------------------------------
 
 def _save_file(file: UploadFile) -> Path:
-    content = file.file.read()
     try:
-        return save_upload(
-            content,
+        return save_upload_stream(
+            file.file,
             cfg.temp_upload_dir,
             file.filename or "upload.csv",
             max_bytes=cfg.max_file_size_bytes,
@@ -263,11 +339,25 @@ async def metrics():
     return PlainTextResponse(generate_latest().decode("utf-8"), media_type=CONTENT_TYPE_LATEST)
 
 
+def _rate_limit(limit: str):
+    """Apply slowapi limit when available; otherwise no-op."""
+    if _RATE_LIMIT and limiter is not None:
+        return limiter.limit(limit)
+
+    def _noop(fn):
+        return fn
+
+    return _noop
+
+
 @app.post("/auth/token", response_model=TokenResponse)
-async def login_for_access_token(form: OAuth2PasswordRequestForm = Depends()):
-    """MVP auth: accept any username if password matches ASPC_ADMIN_PASSWORD (default admin)."""
-    expected = os.getenv("ASPC_ADMIN_PASSWORD", cfg.admin_password)
-    if form.password != expected:
+@_rate_limit("10/minute")
+async def login_for_access_token(
+    request: Request,
+    form: OAuth2PasswordRequestForm = Depends(),
+):
+    """Issue a JWT for the configured admin user (username + bcrypt password)."""
+    if form.username != cfg.admin_username or not _verify_password(form.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -513,19 +603,24 @@ async def get_run(run_id: str, _user: dict = Depends(get_current_user)):
 
 
 @app.get("/reports/{run_id}")
-async def get_report_html(run_id: str):
+async def get_report_html(run_id: str, _user: dict = Depends(get_current_user)):
     """Serve a previously generated HTML report, or rebuild from stored JSON."""
-    path = Path(cfg.report_dir)
+    safe_id = _safe_run_id(run_id)
+    report_root = Path(cfg.report_dir).resolve()
+    report_root.mkdir(parents=True, exist_ok=True)
     for suffix in ("_control_chart.html", "_capability.html", "_msa.html"):
-        candidate = path / f"{run_id}{suffix}"
-        if candidate.exists():
+        try:
+            candidate = resolve_under(report_root, f"{safe_id}{suffix}")
+        except FileReadError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        if candidate.exists() and candidate.is_file():
             return HTMLResponse(candidate.read_text(encoding="utf-8"))
 
-    run = repo.get_run(run_id)
+    run = repo.get_run(safe_id)
     if not run:
-        raise HTTPException(404, f"Run not found: {run_id}")
+        raise HTTPException(404, f"Run not found: {safe_id}")
     report = run["report"]
-    html = f"""<!DOCTYPE html><html><head><title>Run {run_id}</title></head>
+    html = f"""<!DOCTYPE html><html><head><title>Run {safe_id}</title></head>
 <body><h1>{run['analysis_type']}</h1>
 <pre>{json.dumps(report, indent=2, default=str)}</pre></body></html>"""
     return HTMLResponse(html)
@@ -629,8 +724,21 @@ async def ack_alert(
 
 
 @app.websocket("/ws/live/{stream_key}")
-async def ws_live(websocket: WebSocket, stream_key: str):
-    """Subscribe to Redis channel ``spc:live:{stream_key}`` and forward messages."""
+async def ws_live(websocket: WebSocket, stream_key: str, token: Optional[str] = Query(None)):
+    """Subscribe to Redis channel ``spc:live:{stream_key}`` and forward messages.
+
+    Requires a valid JWT ``token`` query parameter when auth is enabled.
+    """
+    if cfg.auth_enabled:
+        if not token:
+            await websocket.close(code=1008, reason="Missing token")
+            return
+        try:
+            _decode_token(token)
+        except HTTPException:
+            await websocket.close(code=1008, reason="Invalid or expired token")
+            return
+
     await websocket.accept()
     channel = f"spc:live:{stream_key}"
     try:
@@ -659,7 +767,6 @@ async def ws_live(websocket: WebSocket, stream_key: str):
                     payload = {"raw": data}
                 await websocket.send_json(payload)
             else:
-                # Keepalive / detect client disconnect
                 try:
                     await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
                 except asyncio.TimeoutError:
@@ -676,23 +783,30 @@ async def ws_live(websocket: WebSocket, stream_key: str):
 
 @app.get("/stream/replay")
 async def stream_replay(
-    file_path: str = Query(..., description="Path to a CSV already on the server"),
+    file_path: str = Query(..., description="CSV filename under the upload directory"),
     value_col: str = Query("measurement"),
     limits_version: str = Query(..., description="Frozen Phase I limits version"),
     _user: dict = Depends(get_current_user),
 ):
-    """SSE stream of OOC signals while replaying a CSV against frozen limits."""
+    """SSE stream of OOC signals while replaying a CSV against frozen limits.
+
+    ``file_path`` must resolve inside the configured upload directory.
+    """
     stored = repo.get_limits(limits_version)
     if not stored:
         raise HTTPException(404, f"Limits version not found: {limits_version}")
 
     limits = _limits_from_stored(stored)
 
-    if not Path(file_path).exists():
+    try:
+        resolved = resolve_under(cfg.temp_upload_dir, file_path)
+    except FileReadError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    if not resolved.exists():
         raise HTTPException(404, f"File not found: {file_path}")
 
     def event_gen():
-        source = FileReplaySource(file_path, value_col=value_col, delay_s=0.0)
+        source = FileReplaySource(str(resolved), value_col=value_col, delay_s=0.0)
         signals = stream_evaluate(source, limits, ruleset=cfg.ruleset)
         for s in signals:
             yield f"data: {s.model_dump_json()}\n\n"

@@ -5,6 +5,7 @@ SQLite for local tests (tables only — no hypertables or retention policies).
 """
 from __future__ import annotations
 
+import os
 import time
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -92,7 +93,10 @@ class TimescaleDBRepository(Repository):
         else:
             self.engine = create_engine(normalize_sync_dsn(dsn), echo=echo, future=True)
         self._Session = sessionmaker(bind=self.engine, expire_on_commit=False, future=True)
-        if init:
+        # Compose runs Alembic in a migrate service; set ASPC_TSDB_INIT=0 to skip
+        # concurrent create_all races from api + stream-engine.
+        env_init = os.getenv("ASPC_TSDB_INIT", "1").lower() not in ("0", "false", "no")
+        if init and env_init:
             init_schema(self.engine)
 
     def _session(self) -> Session:

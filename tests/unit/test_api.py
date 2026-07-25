@@ -8,6 +8,8 @@ import pytest
 # Disable auth before app import side-effects in dependent fixtures.
 os.environ.setdefault("ASPC_AUTH_ENABLED", "false")
 os.environ.setdefault("ASPC_API_KEYS", "")
+os.environ.setdefault("ASPC_DEV_INSECURE", "1")
+os.environ.setdefault("ASPC_JWT_SECRET", "unit-test-secret")
 
 pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient

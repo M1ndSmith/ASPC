@@ -17,13 +17,14 @@ DEFAULTS: dict[str, Any] = {
     "api": {
         "host": "0.0.0.0",
         "port": 8000,
-        "cors_origins": ["*"],
+        "cors_origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
     },
     "auth": {
         "enabled": True,
         "jwt_secret": "change-me-in-production",
         "jwt_algorithm": "HS256",
         "jwt_expire_minutes": 60,
+        "admin_username": "admin",
         "admin_password": "admin",
         "api_keys": [],
     },
@@ -102,12 +103,16 @@ class Config:
         auth = self.config.setdefault("auth", {})
         if os.getenv("ASPC_JWT_SECRET"):
             auth["jwt_secret"] = os.environ["ASPC_JWT_SECRET"]
+        if os.getenv("ASPC_ADMIN_USERNAME"):
+            auth["admin_username"] = os.environ["ASPC_ADMIN_USERNAME"]
         if os.getenv("ASPC_ADMIN_PASSWORD"):
             auth["admin_password"] = os.environ["ASPC_ADMIN_PASSWORD"]
         if os.getenv("ASPC_API_KEYS"):
             auth["api_keys"] = [k.strip() for k in os.environ["ASPC_API_KEYS"].split(",") if k.strip()]
         if os.getenv("ASPC_AUTH_ENABLED") is not None:
             auth["enabled"] = os.environ["ASPC_AUTH_ENABLED"].lower() in ("1", "true", "yes")
+        if os.getenv("ASPC_DEV_INSECURE") is not None:
+            auth["dev_insecure"] = os.environ["ASPC_DEV_INSECURE"].lower() in ("1", "true", "yes")
 
         redis = self.config.setdefault("redis", {})
         if os.getenv("ASPC_REDIS_URL"):
@@ -194,6 +199,10 @@ class Config:
         return int(self.config["auth"].get("jwt_expire_minutes") or 60)
 
     @property
+    def admin_username(self) -> str:
+        return str(self.config["auth"].get("admin_username") or "admin")
+
+    @property
     def admin_password(self) -> str:
         return str(self.config["auth"].get("admin_password") or "admin")
 
@@ -204,6 +213,11 @@ class Config:
     @property
     def auth_enabled(self) -> bool:
         return bool(self.config["auth"].get("enabled", True))
+
+    @property
+    def dev_insecure(self) -> bool:
+        """Explicit opt-out for local/dev insecure auth shortcuts."""
+        return bool(self.config["auth"].get("dev_insecure", False))
 
     @property
     def ruleset(self) -> str:

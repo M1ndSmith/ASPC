@@ -106,6 +106,57 @@ def save_upload(content: bytes, dest_dir: str | Path, filename: str,
     return target
 
 
+def save_upload_stream(
+    stream,
+    dest_dir: str | Path,
+    filename: str,
+    *,
+    max_bytes: Optional[int] = None,
+    allowed_extensions: Optional[list[str]] = None,
+    chunk_size: int = 64 * 1024,
+) -> Path:
+    """Stream an upload to disk with a running size check (avoids reading whole body first)."""
+    dest = Path(dest_dir)
+    dest.mkdir(parents=True, exist_ok=True)
+    name = safe_filename(filename)
+    if allowed_extensions:
+        ext = Path(name).suffix.lower()
+        if ext not in {e.lower() if e.startswith(".") else f".{e.lower()}"
+                       for e in allowed_extensions}:
+            raise FileReadError(f"Extension '{ext}' not allowed. Allowed: {allowed_extensions}")
+    target = dest / name
+    written = 0
+    try:
+        with target.open("wb") as out:
+            while True:
+                chunk = stream.read(chunk_size)
+                if not chunk:
+                    break
+                written += len(chunk)
+                if max_bytes is not None and written > max_bytes:
+                    raise FileReadError(f"File exceeds max size ({max_bytes} bytes)")
+                out.write(chunk)
+    except Exception:
+        if target.exists():
+            target.unlink(missing_ok=True)
+        raise
+    if written == 0:
+        target.unlink(missing_ok=True)
+        raise FileReadError("Uploaded file is empty")
+    return target
+
+
+def resolve_under(base: str | Path, user_path: str) -> Path:
+    """Resolve ``user_path`` and ensure it stays inside ``base`` (no traversal)."""
+    root = Path(base).resolve()
+    candidate = (root / user_path).resolve() if not Path(user_path).is_absolute() else Path(user_path).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise FileReadError(f"Path escapes allowed directory: {user_path!r}") from exc
+    return candidate
+
+
 def _coerce(raw: str) -> Any:
     if raw is None or raw == "":
         return None
