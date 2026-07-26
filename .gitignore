@@ -179,8 +179,13 @@ aspc.db
 var/uploads/
 var/reports/
 examples/data/
+resilience_data/JUDGMENT.md
 frontend/node_modules/
 frontend/.next/
 frontend/out/
 deploy/compose/data/
 *.parquet
+
+# Local working notes (keep on disk, never commit)
+refactoring elements/
+benchmarks/
