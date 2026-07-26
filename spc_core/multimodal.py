@@ -66,7 +66,7 @@ def check_multimodal(values, alpha: float = 0.05) -> MultimodalResult:
     try:
         from diptest import diptest as _diptest
 
-        dip, p, _ = _diptest(arr, is_data_sorted=False)
+        dip, p = _diptest(arr)
         dip, p = float(dip), float(p)
     except ImportError:
         dip = _dip_statistic(arr)
@@ -75,12 +75,43 @@ def check_multimodal(values, alpha: float = 0.05) -> MultimodalResult:
         p = min(max(p, 0.0), 1.0)
 
     hist, _ = np.histogram(arr, bins=min(20, max(5, arr.size // 5)), density=True)
-    peaks = 0
-    for i in range(1, len(hist) - 1):
-        if hist[i] > hist[i - 1] and hist[i] > hist[i + 1] and hist[i] > hist.mean():
-            peaks += 1
+    # Local maxima including edge bins, prominent relative to the tallest bin.
+    mx = float(hist.max()) if hist.size else 0.0
+    peak_idxs: list[int] = []
+    for i in range(len(hist)):
+        left = hist[i - 1] if i > 0 else -np.inf
+        right = hist[i + 1] if i < len(hist) - 1 else -np.inf
+        if hist[i] > left and hist[i] > right and mx > 0 and hist[i] >= 0.4 * mx:
+            peak_idxs.append(i)
 
-    is_mm = (p < alpha and dip > 0) or (peaks >= 2 and p < 0.15)
+    # A genuine mixture is two populated modes separated by a near-EMPTY region. A merely
+    # *shallow* dip is not evidence: normal data at n < 100 routinely shows two or three
+    # noise peaks whose valley sits at 0.2-0.3 of the mode height, which would false-STOP
+    # an in-control process. Require an essentially empty gap at least two bins wide with
+    # substantial mass on both sides of it.
+    clear_bimodal = False
+    if len(peak_idxs) >= 2 and mx > 0:
+        empty = 0.05 * mx
+        widest: tuple[int, int] | None = None
+        start: int | None = None
+        for i in range(peak_idxs[0] + 1, peak_idxs[-1]):
+            if hist[i] <= empty:
+                if start is None:
+                    start = i
+                if widest is None or (i - start) > (widest[1] - widest[0]):
+                    widest = (start, i)
+            else:
+                start = None
+        if widest is not None and (widest[1] - widest[0] + 1) >= 2:
+            total = float(hist.sum())
+            left_mass = float(hist[: widest[0]].sum()) / total
+            right_mass = float(hist[widest[1] + 1 :].sum()) / total
+            clear_bimodal = min(left_mass, right_mass) >= 0.15
+
+    # ``diptest`` is a declared dependency, so ``p`` is normally the real Hartigan
+    # p-value. The histogram check stays as a fallback for installs where the optional
+    # C extension is unavailable and ``_dip_statistic``'s approximate p is unreliable.
+    is_mm = (p < alpha and dip > 0) or clear_bimodal
     if is_mm:
         rec = (
             "Multimodal distribution detected. STOP — stratify by machine/shift/lot "

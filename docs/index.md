@@ -25,6 +25,10 @@ Go-live is gated by `phase1_checklist()` (10 items). Streams register and activa
 
 | Doc | Audience | Contents |
 |-----|----------|----------|
+| [overview/problem-and-solution.md](overview/problem-and-solution.md) | Decision-makers & practitioners | Problem, solution, architecture diagrams |
+| [overview/capabilities.md](overview/capabilities.md) | Practitioners & developers | Statistical + operational capabilities |
+| [overview/use-cases.md](overview/use-cases.md) | Integrators | Stamping / pharma / molding patterns |
+| [overview/benchmarking.md](overview/benchmarking.md) | Technical leads | Performance, accuracy, resilience evidence |
 | [concepts.md](concepts.md) | Everyone | Chart types, run rules, MSA, capability, normality / flags |
 | [pipeline.md](pipeline.md) | Operators & developers | Gated `establish()`, gates, checklist, `SPCRecord` |
 | [cli.md](cli.md) | Operators & developers | `aspc` commands and flags |
@@ -32,7 +36,7 @@ Go-live is gated by `phase1_checklist()` (10 items). Streams register and activa
 | [python-api.md](python-api.md) | Developers | Library imports and snippets |
 | [configuration.md](configuration.md) | Operators & DevOps | YAML + `ASPC_*` env overrides |
 | [deployment.md](deployment.md) | DevOps | Docker Compose, migrations, services |
-| [development.md](development.md) | Contributors | uv, tests, CI, `sample_data` |
+| [development.md](development.md) | Contributors | uv, tests, CI, `sample_data`, benchmarks |
 
 ## Quick links
 

@@ -4,6 +4,19 @@ Correct, tested SPC for **batch** and **real-time** work: Shewhart / EWMA / CUSU
 
 Phase I establishes and freezes versioned limits; Phase II evaluates new data against those limits. No stubs — every advertised `ChartType` has real math.
 
+## Why ASPC?
+
+Manufacturing needs SPC that is **correct**, **gated before go-live**, and **usable in real time** against frozen limits — not only a desktop chart after the shift. See:
+
+| Doc | Contents |
+|-----|----------|
+| [docs/overview/problem-and-solution.md](docs/overview/problem-and-solution.md) | Problem, solution, Phase I → freeze → Phase II |
+| [docs/overview/capabilities.md](docs/overview/capabilities.md) | Statistical + operational capabilities |
+| [docs/overview/use-cases.md](docs/overview/use-cases.md) | Stamping / pharma / molding integration patterns |
+| [docs/overview/benchmarking.md](docs/overview/benchmarking.md) | Performance, accuracy, resilience evidence |
+
+Reproduce benches: `python benchmarks/performance.py` and `python benchmarks/accuracy.py` ([benchmarks/README.md](benchmarks/README.md)). Claims are scoped in [docs/overview/benchmarking.md](docs/overview/benchmarking.md): formula fidelity ≠ Minitab/JMP parity; MSA and `valid_range` gates are **opt-in** (absence warns / skips, does not always STOP).
+
 ## Features
 
 - Gated Phase I pipeline (`establish`) with ok / warn / stop gates and a 10-item go-live checklist
@@ -70,6 +83,8 @@ docker compose -f deploy/compose/docker-compose.yml up -d --build
 
 | Guide | Description |
 |-------|-------------|
+| [docs/overview/problem-and-solution.md](docs/overview/problem-and-solution.md) | Why ASPC — problem, solution, architecture |
+| [docs/overview/benchmarking.md](docs/overview/benchmarking.md) | Performance, accuracy, robustness |
 | [docs/index.md](docs/index.md) | Doc map and Phase I → freeze → Phase II model |
 | [docs/concepts.md](docs/concepts.md) | Charts, rules, MSA, capability, flags |
 | [docs/pipeline.md](docs/pipeline.md) | Gated `establish()`, checklist, `SPCRecord` |

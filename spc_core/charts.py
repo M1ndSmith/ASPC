@@ -87,6 +87,7 @@ class ControlChartResult:
     distribution_flag: DistributionFlag = DistributionFlag.NORMAL
     transform_applied: str | None = None
     phase: Phase = Phase.PHASE_I
+    ruleset_applied: str | None = None
 
     @property
     def out_of_control_count(self) -> int:
@@ -230,7 +231,14 @@ def analyze_control_chart(
 
     elif chart_type in (ChartType.XBAR_R, ChartType.XBAR_S):
         subs = L.build_subgroups(arr, subgroup_ids)
-        subgroup_size = int(np.median([len(s) for s in subs]))
+        if exclude_incomplete and subs:
+            from collections import Counter
+
+            sizes = [len(s) for s in subs]
+            nominal = Counter(sizes).most_common(1)[0][0]
+            if len(set(sizes)) > 1:
+                subs = [s for s in subs if len(s) == nominal]
+        subgroup_size = int(np.median([len(s) for s in subs])) if subs else 0
         if chart_type == ChartType.XBAR_R:
             limits = L.xbar_r_limits(subs, exclude_incomplete=exclude_incomplete)
             secondary = [float(s.max() - s.min()) for s in subs]
@@ -311,5 +319,5 @@ def analyze_control_chart(
         chart_type=chart_type, data_type=dtype,
         subgroup_size=subgroup_size, limits=limits, plotted_values=plotted,
         secondary_values=secondary, secondary_name=secondary_name, signals=signals,
-        secondary_signals=sec_signals, summary=summary,
+        secondary_signals=sec_signals, summary=summary, ruleset_applied=ruleset,
     )

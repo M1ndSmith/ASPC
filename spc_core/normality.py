@@ -204,6 +204,10 @@ def apply_transform(values, method: str = "auto", alpha: float = 0.05) -> Transf
     """
     arr = _clean(values)
     method = method.lower()
+    if arr.size < 2 and method != "none":
+        raise ValueError(
+            f"apply_transform() requires at least 2 finite values; got {arr.size}."
+        )
 
     if method == "none":
         return TransformResult(applied="NONE", label="No transform", values=arr, became_normal=None)

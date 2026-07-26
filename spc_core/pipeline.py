@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 
 from .charts import ControlChartResult, analyze_control_chart
-from .cleaning import classify_missing
+from .cleaning import classify_missing, range_check
 from .models import ChartType, DistributionFlag, Phase, QualityFlag
 from .msa import GageRRResult, gage_resolution_gate, gage_rr_anova, ndc_gate
 from .multimodal import MultimodalResult, check_multimodal
@@ -25,6 +25,10 @@ from .normality import (
     check_autocorrelation,
     check_normality,
 )
+
+# Hard floor for computing any control limits at all (a moving range needs two points).
+# This is *not* the Phase I adequacy threshold — that is phase1_checklist's job.
+MIN_ESTABLISH_POINTS = 2
 
 
 @dataclass
@@ -76,6 +80,8 @@ def establish(
     gage_resolution: float | None = None,
     # Missing-value reasons aligned with values (optional).
     missing_reasons=None,
+    # Physical (low, high) measurement range; out-of-range points are measurement failures.
+    valid_range: tuple[float, float] | None = None,
     # Prefer EWMA over CUSUM when autocorrelated.
     autocorrelated_chart: str = "EWMA",
     force_wheeler: bool = False,
@@ -83,6 +89,11 @@ def establish(
     """Run the gated Phase I pipeline and return chart + gates."""
     gates: list[Gate] = []
     arr = np.asarray(values, dtype=float)
+    if arr.size < MIN_ESTABLISH_POINTS:
+        raise ValueError(
+            f"establish() requires at least {MIN_ESTABLISH_POINTS} observations to "
+            f"compute control limits; received {arr.size}."
+        )
     working = arr.copy()
     dist_flag = DistributionFlag.NORMAL
     transform_applied = None
@@ -94,6 +105,15 @@ def establish(
     route = "shewhart"
     active_ruleset = ruleset
     active_chart = chart_type
+    # Determined up front from the caller's intent, because active_chart is mutated below.
+    # Attribute (count) data is binomial/Poisson, so the continuous-data machinery —
+    # Gaussian normality, Hartigan's dip test, and the EWMA/CUSUM reroute — does not
+    # apply to it.
+    is_attribute = (
+        chart_type in (ChartType.P, ChartType.NP, ChartType.C, ChartType.U)
+        or sample_sizes is not None
+        or opportunities is not None
+    )
 
     # ---- 1. MSA gate ----
     if msa_measurements is not None and msa_parts is not None and msa_operators is not None:
@@ -134,6 +154,37 @@ def establish(
             reason="MSA inputs not provided; proceeding without measurement-system gate.",
         ))
 
+    # ---- 1b. Physical range gate ----
+    # An out-of-range reading (e.g. a -999 disconnected-sensor sentinel) is a measurement
+    # failure, not process variation. Blank it here so it cannot be charted as an OOC
+    # signal; the missing-value step below then classifies it as MISSING_SENSOR.
+    if valid_range is not None:
+        low, high = float(valid_range[0]), float(valid_range[1])
+        out_of_range = [
+            i for i, ok in enumerate(range_check(working, low, high))
+            if not ok and not np.isnan(working[i])
+        ]
+        if out_of_range:
+            reasons = (
+                list(missing_reasons) if missing_reasons is not None
+                else [None] * int(working.size)
+            )
+            for i in out_of_range:
+                working[i] = np.nan
+                reasons[i] = "sensor"
+            missing_reasons = reasons
+        gates.append(Gate(
+            step="range",
+            status="warn" if out_of_range else "ok",
+            reason=(
+                f"{len(out_of_range)} reading(s) outside physical range "
+                f"[{low}, {high}] blanked as measurement failures."
+                if out_of_range
+                else f"All readings within physical range [{low}, {high}]."
+            ),
+            detail={"n_out_of_range": len(out_of_range), "low": low, "high": high},
+        ))
+
     # ---- 2. Missing-value classification ----
     if missing_reasons is not None or np.any(np.isnan(working)):
         result = classify_missing(working, reasons=missing_reasons)
@@ -157,10 +208,29 @@ def establish(
         gates.append(Gate(step="missing", status="ok", reason="No missing values."))
 
     clean = working[~np.isnan(working)]
+    if clean.size < MIN_ESTABLISH_POINTS:
+        raise ValueError(
+            f"establish() requires at least {MIN_ESTABLISH_POINTS} usable observations "
+            f"to compute control limits; only {clean.size} of {arr.size} values remain "
+            "after missing-value classification. Whether there are *enough* points for "
+            "Phase I is judged separately by phase1_checklist()."
+        )
 
     # ---- 3. Autocorrelation ----
     acf = check_autocorrelation(clean, threshold=acf_threshold)
-    if acf.is_autocorrelated:
+    if acf.is_autocorrelated and is_attribute:
+        # Flag it, but keep the attribute chart: an EWMA on raw counts would throw away
+        # the per-point binomial/Poisson limits that P and U charts depend on.
+        gates.append(Gate(
+            step="autocorrelation", status="warn",
+            reason=(
+                f"Autocorrelation detected (lag-1={acf.lag1:.3f}) in attribute data. "
+                "Investigate serial dependence in the count process; the chart stays "
+                "on binomial/Poisson limits rather than rerouting to EWMA/CUSUM."
+            ),
+            detail={"lag1": acf.lag1, "route": "attribute", "reroute_suppressed": True},
+        ))
+    elif acf.is_autocorrelated:
         route = autocorrelated_chart.upper()
         active_chart = ChartType.EWMA if route == "EWMA" else ChartType.CUSUM
         gates.append(Gate(
@@ -175,7 +245,16 @@ def establish(
         ))
 
     # ---- 4. Normality + multimodal (only if not already routed to EWMA/CUSUM) ----
-    if active_chart not in (ChartType.EWMA, ChartType.CUSUM):
+    if is_attribute:
+        gates.append(Gate(
+            step="normality", status="ok",
+            reason=(
+                "Attribute (count) data: binomial/Poisson limits apply, so the normality "
+                "and dip tests are not applicable and were skipped."
+            ),
+            detail={"skipped": True, "reason_code": "attribute_data"},
+        ))
+    elif active_chart not in (ChartType.EWMA, ChartType.CUSUM):
         multimodal = check_multimodal(clean)
         if multimodal.is_multimodal:
             gates.append(Gate(

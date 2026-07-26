@@ -30,6 +30,8 @@ uv lock
 | `apps/` | FastAPI + CLI + config |
 | `services/` | stream-engine, mqtt-bridge |
 | `sample_data/` | Deterministic synthetic datasets |
+| `resilience_data/` | Standards-mapped sad/happy path corpus |
+| `benchmarks/` | Performance + accuracy harnesses |
 | `frontend/` | Next.js operator UI |
 | `tests/` | unit + integration |
 | `docs/` | This documentation |
@@ -75,11 +77,20 @@ PY
 Configured in [`pyproject.toml`](../pyproject.toml):
 
 ```bash
-ruff check spc_core adapters apps services sample_data tests
+ruff check spc_core adapters apps services sample_data resilience_data scripts tests benchmarks
 mypy spc_core adapters apps   # packages listed in tool.mypy
 ```
 
 CI currently runs ruff non-blocking (`|| true`); treat failures as real before merge.
+
+## Benchmarks
+
+In-process performance and formula accuracy (see [overview/benchmarking.md](overview/benchmarking.md)):
+
+```bash
+.venv/bin/python benchmarks/performance.py
+.venv/bin/python benchmarks/accuracy.py   # exit 1 if any check fails
+```
 
 ## Synthetic data (`sample_data`)
 
