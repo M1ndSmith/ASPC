@@ -62,7 +62,7 @@ from .normality import (
     check_autocorrelation,
     check_normality,
 )
-from .pipeline import Gate, PipelineResult, establish, phase1_checklist
+from .pipeline import Gate, PipelineResult, checklist_ready_for_golive, establish, phase1_checklist
 from .report import CapabilityReport, MSAReport, SPCReport
 from .rules import RuleEngine, evaluate_series
 
@@ -131,6 +131,7 @@ __all__ = [
     "p_limits",
     "parametric_capability",
     "phase1_checklist",
+    "checklist_ready_for_golive",
     "range_check",
     "select_chart_type",
     "sigma_to_dpmo",

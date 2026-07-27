@@ -484,3 +484,18 @@ def phase1_checklist(
         "stopped": pipeline.stopped,
         "msa_ok": msa_ok,
     }
+
+
+def checklist_ready_for_golive(checklist: dict[str, Any]) -> bool:
+    """True when checklist items other than ``phase2_enabled`` pass.
+
+    Analyze always runs the checklist with ``phase2_enabled=False``, so the
+    aggregate ``passed`` flag stays False until go-live. Use this for the
+    persisted go-live gate instead.
+    """
+    items = checklist.get("items") or []
+    return all(
+        bool(i.get("passed"))
+        for i in items
+        if i.get("item") != "phase2_enabled"
+    )
