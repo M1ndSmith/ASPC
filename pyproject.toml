@@ -102,13 +102,12 @@ packages = [
     "services",
     "services.stream_engine",
     "services.mqtt_bridge",
-    "resilience_data",
-    "resilience_data.generators",
     "sample_data",
 ]
 
-[tool.setuptools.package-data]
-resilience_data = ["MANIFEST.json", "README.md", "cases/**/*.csv"]
+# resilience_data is a repo-local corpus (imported via pytest path), not an
+# installable package — keep it out of setuptools so CI/Vercel installs work
+# when the tree is absent from the git checkout.
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
