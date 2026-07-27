@@ -144,6 +144,7 @@ warn_unused_ignores = true
 check_untyped_defs = true
 packages = ["spc_core"]
 
-# Vercel native FastAPI deploy (slim UI+API path). See deploy/vercel/README.md.
+# Kept for optional native FastAPI experiments. Preferred slim path uses
+# root Dockerfile.vercel (container) — see deploy/vercel/README.md.
 [tool.vercel]
 entrypoint = "apps.api.main:app"

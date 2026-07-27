@@ -1,4 +1,3 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "pip install -e \".[apps,data,render]\""
+  "$schema": "https://openapi.vercel.sh/vercel.json"
 }

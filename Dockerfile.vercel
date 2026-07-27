@@ -1,9 +1,6 @@
-# Slim ASPC API image for Vercel (HTTP only) — UI + API, nothing else.
-# Build from the REPO ROOT (not from this folder):
-#   docker build -f deploy/vercel/Dockerfile.api -t aspc-api:slim .
-#
-# No MQTT / Kafka / stream-engine / external DB. Batch Analyze works.
-# SQLite at ASPC_SQLITE_PATH (default /tmp/aspc.db) — ephemeral on Vercel.
+# Slim ASPC API for Vercel container functions (UI + API only).
+# Detected automatically when present at the repo root.
+# Build locally: docker build -f Dockerfile.vercel -t aspc-api:vercel .
 
 FROM python:3.12-slim
 
@@ -22,7 +19,7 @@ COPY apps ./apps
 COPY services ./services
 COPY sample_data ./sample_data
 
-# No tsdb/stream extras — SQLite + apps only (CSV Analyze; no polars/plotly)
+# apps only — skip polars/plotly to keep the image lean; CSV Analyze still works.
 RUN uv pip install --system --no-cache -e ".[apps]"
 
 ENV PYTHONUNBUFFERED=1
@@ -33,5 +30,4 @@ ENV ASPC_SQLITE_PATH=/tmp/aspc.db
 
 EXPOSE 8000
 
-# Map $PORT → ASPC_API_PORT when Vercel provides it.
 CMD ["sh", "-c", "export ASPC_API_PORT=\"${PORT:-${ASPC_API_PORT:-8000}}\" && exec aspc-api"]

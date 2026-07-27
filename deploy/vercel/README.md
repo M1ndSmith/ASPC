@@ -10,44 +10,15 @@ This folder is **additive** — it does not change Compose or the streaming stac
 | FastAPI SPC core (Analyze, MSA, capability, auth) | stream-engine, Live + sim |
 | SQLite inside the API (`/tmp/aspc.db`, ephemeral) | |
 
-## Preferred: native FastAPI (not Docker)
+## Preferred: container image (`Dockerfile.vercel`)
 
-Vercel Framework Preset: **FastAPI** (not “Other”, not Docker).
+Native FastAPI serverless packaging pulls in numpy/scipy and exceeds Vercel’s default ~225 MB function limit. The root [`Dockerfile.vercel`](../../Dockerfile.vercel) deploys the API as a container function instead.
 
-### 0. One-time in the repo (already done if you pulled latest)
+### 1. API project (`aspc-api` / …)
 
-`pyproject.toml` contains:
-
-```toml
-[tool.vercel]
-entrypoint = "apps.api.main:app"
-```
-
-If a root `Dockerfile.vercel` exists, **rename or delete it** for this project so Vercel does not try Docker instead:
-
-```bash
-git rm -f Dockerfile.vercel   # or: mv Dockerfile.vercel Dockerfile.vercel.bak
-git push
-```
-
-For the API project, copy the install helper to the repo root (API root = `.`):
-
-```bash
-cp deploy/vercel/vercel.json ./vercel.json
-git add vercel.json pyproject.toml
-git commit -m "Configure Vercel FastAPI entrypoint and install extras"
-git push
-```
-
-(`frontend/` is a separate Vercel project with Root Directory `frontend`, so this root `vercel.json` does not affect the UI.)
-
-### 1. API project (`aspc-api` / `aspc-plum` / …)
-
-1. Framework: **FastAPI**
+1. Framework: **Other** (or leave auto-detect — root `Dockerfile.vercel` is enough)
 2. Root Directory: **`.`** (repo root)
-3. Install Command (if not using root `vercel.json`):  
-   `pip install -e ".[apps,data,render]"`
-4. Env:
+3. Env:
 
 ```text
 ASPC_AUTH_ENABLED=true
@@ -59,12 +30,15 @@ ASPC_PERSISTENCE_BACKEND=sqlite
 ASPC_SQLITE_PATH=/tmp/aspc.db
 ASPC_CORS_ORIGINS=https://aspc-web.vercel.app
 ASPC_DEV_INSECURE=1
+VERCEL_SUPPORT_LARGE_FUNCTIONS=1
 ```
 
-`ASPC_DEV_INSECURE=1` is required if you use password `admin` or a default JWT secret (startup refuses those otherwise). Use only for a private demo.
+`ASPC_DEV_INSECURE=1` is required if you use password `admin` or a default JWT secret (startup refuses those otherwise). Demo only.
 
-5. Redeploy.
-6. Check:
+`VERCEL_SUPPORT_LARGE_FUNCTIONS=1` opts existing projects into Fluid large functions (needed for scientific Python deps).
+
+4. Redeploy from latest `aspc-refactor`.
+5. Check:
 
 ```bash
 curl -sS https://YOUR-API.vercel.app/health
@@ -90,9 +64,12 @@ NEXT_PUBLIC_WS_URL=wss://YOUR-API.vercel.app
 
 Use `ASPC_ADMIN_USERNAME` / `ASPC_ADMIN_PASSWORD` from the API env (e.g. `admin` / `admin` if set as above).
 
-## Optional: Docker API image
+## Local slim image
 
-[`Dockerfile.api`](Dockerfile.api) remains for local slim image tests or if you prefer Docker later. Native FastAPI is simpler on Vercel.
+```bash
+docker build -f Dockerfile.vercel -t aspc-api:vercel .
+# or: docker build -f deploy/vercel/Dockerfile.api -t aspc-api:slim .
+```
 
 ## Brother demo choice
 
