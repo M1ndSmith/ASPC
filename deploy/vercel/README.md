@@ -14,7 +14,7 @@ This folder is **additive** — it does not change Compose or the streaming stac
 
 1. Framework: **FastAPI**
 2. Root Directory: **empty / `.`** (never set this to a Dockerfile path)
-3. Install Command: `pip install -e ".[apps]"`
+3. Install Command: `pip install -e ".[apps,render]"`
 4. Env (at least):
 
 ```text
@@ -25,10 +25,14 @@ ASPC_ADMIN_PASSWORD=admin
 ASPC_API_KEYS=demokey
 ASPC_PERSISTENCE_BACKEND=sqlite
 ASPC_SQLITE_PATH=/tmp/aspc.db
+ASPC_UPLOAD_DIR=/tmp/aspc-uploads
+ASPC_REPORT_DIR=/tmp/aspc-reports
 ASPC_CORS_ORIGINS=https://aspc-web.vercel.app
 ASPC_DEV_INSECURE=1
 VERCEL_SUPPORT_LARGE_FUNCTIONS=1
 ```
+
+Uploads/reports default to `/tmp/...` automatically when `VERCEL=1` is present.
 
 `VERCEL_SUPPORT_LARGE_FUNCTIONS=1` is required so numpy/scipy fit past the default ~225 MB function limit.
 

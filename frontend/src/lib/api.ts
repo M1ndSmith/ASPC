@@ -60,8 +60,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, { ...init, headers });
-  } catch {
-    throw new ApiError(`Cannot reach API at ${API_URL}`, 0);
+  } catch (err) {
+    const hint =
+      err instanceof TypeError
+        ? " (network/CORS — check API is up and ASPC_CORS_ORIGINS includes this origin)"
+        : "";
+    throw new ApiError(`Cannot reach API at ${API_URL}${hint}`, 0);
   }
 
   if (!res.ok) {
@@ -86,8 +90,12 @@ async function upload(path: string, form: FormData): Promise<AnalyzeResponse> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, { method: "POST", headers, body: form });
-  } catch {
-    throw new ApiError(`Cannot reach API at ${API_URL}`, 0);
+  } catch (err) {
+    const hint =
+      err instanceof TypeError
+        ? " (network/CORS — check API is up and ASPC_CORS_ORIGINS includes this origin)"
+        : "";
+    throw new ApiError(`Cannot reach API at ${API_URL}${hint}`, 0);
   }
 
   if (!res.ok) {
@@ -113,8 +121,12 @@ export async function login(username: string, password: string): Promise<void> {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
     });
-  } catch {
-    throw new ApiError(`Cannot reach API at ${API_URL}`, 0);
+  } catch (err) {
+    const hint =
+      err instanceof TypeError
+        ? " (network/CORS — check API is up and ASPC_CORS_ORIGINS includes this origin)"
+        : "";
+    throw new ApiError(`Cannot reach API at ${API_URL}${hint}`, 0);
   }
 
   if (!res.ok) {

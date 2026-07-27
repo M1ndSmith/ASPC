@@ -53,6 +53,7 @@ from spc_core import (
     bias_study,
     capability_analysis,
     check_normality,
+    checklist_ready_for_golive,
     establish,
     gage_rr_anova,
     gage_rr_range,
@@ -152,6 +153,16 @@ def _startup_security_checks() -> None:
         raise RuntimeError(
             "ASPC_JWT_SECRET is still the default 'change-me-in-production'. "
             "Set a strong secret, or set ASPC_DEV_INSECURE=1 for local development only."
+        )
+    if cfg.admin_password == "admin" and not cfg.dev_insecure:
+        raise RuntimeError(
+            "ASPC_ADMIN_PASSWORD is still the default 'admin'. "
+            "Set a strong password, or set ASPC_DEV_INSECURE=1 for local development only."
+        )
+    if not cfg.api_keys and not cfg.dev_insecure:
+        raise RuntimeError(
+            "ASPC_API_KEYS is empty. Set at least one API key for stream mutations, "
+            "or set ASPC_DEV_INSECURE=1 for local development only."
         )
 
 
@@ -277,6 +288,15 @@ def _save_file(file: UploadFile) -> Path:
         raise HTTPException(400, str(exc)) from exc
 
 
+def _maybe_html(render_fn, report: Any, filename: str) -> str | None:
+    if not cfg.config["reports"]["auto_generate"]:
+        return None
+    try:
+        return str(save_html(render_fn(report), Path(cfg.report_dir) / filename))
+    except (ImportError, OSError):
+        return None
+
+
 def _load(path: Path) -> dict[str, list]:
     try:
         return load_columns(path)
@@ -399,6 +419,8 @@ async def analyze_cc(
     ruleset: str | None = Form(None),
     user_id: str | None = Form(None),
     include_records: bool = Form(False),
+    msa_file: UploadFile | None = File(None),
+    msa_tolerance: float | None = Form(None),
     _user: dict = Depends(get_current_user),
 ):
     t0 = time.perf_counter()
@@ -415,6 +437,28 @@ async def analyze_cc(
     if cmap.value_col is None:
         raise HTTPException(400, "Could not detect measurement column")
 
+    msa_kwargs: dict[str, Any] = {}
+    if msa_file is not None and msa_file.filename:
+        msa_path = _save_file(msa_file)
+        msa_cols = _load(msa_path)
+        msa_frame = ingest(msa_cols)
+        msa_map = msa_frame.column_map
+        if (
+            msa_map.value_col is None
+            or msa_map.part_col is None
+            or msa_map.operator_col is None
+        ):
+            raise HTTPException(
+                400,
+                "MSA file needs measurement, part, and operator columns",
+            )
+        msa_kwargs = {
+            "msa_parts": msa_cols[msa_map.part_col],
+            "msa_operators": msa_cols[msa_map.operator_col],
+            "msa_measurements": msa_cols[msa_map.value_col],
+            "msa_tolerance": msa_tolerance,
+        }
+
     values = columns[cmap.value_col]
     ct = ChartType(chart_type) if chart_type else None
     pipeline = establish(
@@ -425,6 +469,7 @@ async def analyze_cc(
         chart_type=ct,
         ruleset=ruleset or cfg.ruleset,
         acf_threshold=cfg.acf_threshold,
+        **msa_kwargs,
     )
     checklist = phase1_checklist(
         pipeline,
@@ -447,7 +492,8 @@ async def analyze_cc(
         "source_file": str(path),
         "frozen": pipeline.frozen,
         "stopped": pipeline.stopped,
-        "checklist_passed": bool(checklist.get("passed")),
+        # Exclude phase2_enabled — that item flips only after go-live itself.
+        "checklist_passed": checklist_ready_for_golive(checklist),
         "limits_version": report.limits.version,
     }
     # Only persist freezeable limits — STOP / failed checklist must not produce
@@ -466,8 +512,9 @@ async def analyze_cc(
 
     html_path = None
     if cfg.config["reports"]["auto_generate"]:
-        html = render_control_chart_html(report)
-        html_path = str(save_html(html, Path(cfg.report_dir) / f"{run_id}_control_chart.html"))
+        html_path = _maybe_html(
+            render_control_chart_html, report, f"{run_id}_control_chart.html"
+        )
 
     if _PROM:
         ANALYZE_LATENCY.labels(kind="control_chart").observe(time.perf_counter() - t0)
@@ -519,8 +566,7 @@ async def analyze_cap(
     )
     html_path = None
     if cfg.config["reports"]["auto_generate"]:
-        html = render_capability_html(report)
-        html_path = str(save_html(html, Path(cfg.report_dir) / f"{run_id}_capability.html"))
+        html_path = _maybe_html(render_capability_html, report, f"{run_id}_capability.html")
 
     return AnalyzeResponse(
         run_id=run_id, analysis_type="capability",
@@ -597,8 +643,7 @@ async def analyze_msa(
     )
     html_path = None
     if cfg.config["reports"]["auto_generate"]:
-        html = render_msa_html(report)
-        html_path = str(save_html(html, Path(cfg.report_dir) / f"{run_id}_msa.html"))
+        html_path = _maybe_html(render_msa_html, report, f"{run_id}_msa.html")
 
     return AnalyzeResponse(
         run_id=run_id, analysis_type="msa",

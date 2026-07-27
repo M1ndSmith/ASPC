@@ -123,6 +123,19 @@ class Config:
         if os.getenv("ASPC_KAFKA_TOPIC"):
             kafka["topic"] = os.environ["ASPC_KAFKA_TOPIC"]
 
+        # Serverless (Vercel) filesystems are read-only except /tmp.
+        uploads = self.config.setdefault("uploads", {})
+        if os.getenv("ASPC_UPLOAD_DIR"):
+            uploads["temp_directory"] = os.environ["ASPC_UPLOAD_DIR"]
+        elif os.getenv("VERCEL"):
+            uploads["temp_directory"] = "/tmp/aspc-uploads"
+
+        reports = self.config.setdefault("reports", {})
+        if os.getenv("ASPC_REPORT_DIR"):
+            reports["output_directory"] = os.environ["ASPC_REPORT_DIR"]
+        elif os.getenv("VERCEL"):
+            reports["output_directory"] = "/tmp/aspc-reports"
+
     @staticmethod
     def _deep_merge(base: dict, override: dict) -> dict:
         out = dict(base)
