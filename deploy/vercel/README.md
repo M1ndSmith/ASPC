@@ -14,7 +14,7 @@ This folder is **additive** — it does not change Compose or the streaming stac
 
 1. Framework: **FastAPI**
 2. Root Directory: **empty / `.`** (never set this to a Dockerfile path)
-3. Install Command: `pip install -e ".[apps,render]"`
+3. Install Command: `pip install -e ".[apps]"` (skip `render`/plotly — it blows the 225 MB function limit; Analyze JSON still works)
 4. Env (at least):
 
 ```text

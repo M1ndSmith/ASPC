@@ -1,5 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "fastapi",
-  "installCommand": "pip install -e \".[apps,render]\""
+  "installCommand": "pip install -e \".[apps]\""
 }
