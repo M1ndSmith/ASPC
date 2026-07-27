@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
+  // Docker Compose needs standalone; Vercel provides its own output and breaks with it.
+  ...(process.env.VERCEL ? {} : { output: "standalone" }),
   reactStrictMode: true,
   transpilePackages: ["react-plotly.js"],
   webpack: (config) => {

@@ -49,16 +49,20 @@ curl -sS https://aspc-api-xxx.vercel.app/health
 
 1. **Add New Project** again → same repo.
 2. Project name e.g. `aspc-web`.
-3. **Root Directory:** `frontend`.
-4. Env:
+3. **Root Directory:** `frontend` (Settings → General → Root Directory).
+4. Framework Preset: **Next.js**. Build command / output leave default.
+5. Env:
 
    ```text
    NEXT_PUBLIC_API_URL=https://aspc-api-xxx.vercel.app
    NEXT_PUBLIC_WS_URL=wss://aspc-api-xxx.vercel.app
    ```
 
-5. Deploy → note the UI URL.
-6. On **aspc-api** set `ASPC_CORS_ORIGINS=https://aspc-web-xxx.vercel.app` → redeploy API.
+6. Deploy → open the UI URL (not the API project URL).
+7. On **aspc-api** set `ASPC_CORS_ORIGINS=https://aspc-web-xxx.vercel.app` → redeploy API.
+
+If you see Vercel `404: NOT_FOUND` on the UI: Root Directory must be `frontend`, and
+`next.config.js` must not force `output: "standalone"` on Vercel (already gated via `VERCEL` env).
 
 Open the UI → login → **Analyze**. **Live** will not work here.
 
