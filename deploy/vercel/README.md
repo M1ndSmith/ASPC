@@ -1,87 +1,102 @@
 # Slim deploy: frontend + API only (Vercel)
 
-This folder is **additive** — it does not change Compose, `spc_core`, or the full streaming stack.
+This folder is **additive** — it does not change Compose or the streaming stack.
 
-**Only two things:** the UI (like local `:3000`) and the API (like local `:8000`). No extra DB service, no Supabase/Neon, no MQTT/Kafka.
+**Only two things:** UI (like `:3000`) and API (like `:8000`). No MQTT/Kafka/Redis/DB service.
 
 | Included | Not included |
 |----------|----------------|
-| Next.js UI (`frontend/`) | Mosquitto / MQTT / Kafka / Redis |
-| FastAPI SPC core (Analyze, MSA, capability, auth) | stream-engine, mqtt-bridge |
-| SQLite inside the API container | Live Monitoring + manufacturing sim |
+| Next.js UI (`frontend/`) | Mosquitto / Kafka / Redis |
+| FastAPI SPC core (Analyze, MSA, capability, auth) | stream-engine, Live + sim |
+| SQLite inside the API (`/tmp/aspc.db`, ephemeral) | |
 
-SQLite on Vercel is **ephemeral** (cold starts can wipe saved runs). Fine for a brother demo of Analyze; not for permanent history.
+## Preferred: native FastAPI (not Docker)
 
-For Live + sim, keep using local Compose (+ ngrok). See [docs/deployment.md](../../docs/deployment.md).
+Vercel Framework Preset: **FastAPI** (not “Other”, not Docker).
 
-## Layout
+### 0. One-time in the repo (already done if you pulled latest)
 
-| File | Role |
-|------|------|
-| [`Dockerfile.api`](Dockerfile.api) | API image; build context = **repo root** |
-| [`.env.example`](.env.example) | Env vars for API + frontend |
+`pyproject.toml` contains:
 
-## 1. API on Vercel (Docker)
-
-1. Push this repo to GitHub.
-2. [Vercel](https://vercel.com) → **Add New Project** → import the repo.
-3. Project name e.g. `aspc-api`.
-4. **Root Directory:** repository root (`.`).
-5. Use this Dockerfile — Vercel looks for `Dockerfile.vercel` at the repo root:
-
-   ```bash
-   # from repo root, only for this deploy (optional; do not have to commit)
-   cp deploy/vercel/Dockerfile.api Dockerfile.vercel
-   vercel --prod
-   ```
-
-   See [Vercel Docker docs](https://vercel.com/kb/guide/does-vercel-support-docker-deployments).
-
-6. Set env vars from [`.env.example`](.env.example) (API section). Leave `ASPC_CORS_ORIGINS` until the frontend URL exists, then update and redeploy.
-
-7. Deploy → note the API URL, e.g. `https://aspc-api-xxx.vercel.app`.
-
-```bash
-curl -sS https://aspc-api-xxx.vercel.app/health
+```toml
+[tool.vercel]
+entrypoint = "apps.api.main:app"
 ```
 
-## 2. Frontend on Vercel (Next.js)
-
-1. **Add New Project** again → same repo.
-2. Project name e.g. `aspc-web`.
-3. **Root Directory:** `frontend` (Settings → General → Root Directory).
-4. Framework Preset: **Next.js**. Build command / output leave default.
-5. Env:
-
-   ```text
-   NEXT_PUBLIC_API_URL=https://aspc-api-xxx.vercel.app
-   NEXT_PUBLIC_WS_URL=wss://aspc-api-xxx.vercel.app
-   ```
-
-6. Deploy → open the UI URL (not the API project URL).
-7. On **aspc-api** set `ASPC_CORS_ORIGINS=https://aspc-web-xxx.vercel.app` → redeploy API.
-
-If you see Vercel `404: NOT_FOUND` on the UI: Root Directory must be `frontend`, and
-`next.config.js` must not force `output: "standalone"` on Vercel (already gated via `VERCEL` env).
-
-Open the UI → login → **Analyze**. **Live** will not work here.
-
-## 3. Local test of the slim API image
+If a root `Dockerfile.vercel` exists, **rename or delete it** for this project so Vercel does not try Docker instead:
 
 ```bash
-cd /path/to/ASPC
-docker build -f deploy/vercel/Dockerfile.api -t aspc-api:slim .
-docker run --rm -p 8000:8000 \
-  -e ASPC_DEV_INSECURE=1 \
-  -e ASPC_JWT_SECRET=dev \
-  -e ASPC_ADMIN_PASSWORD=admin \
-  -e ASPC_API_KEYS=devkey \
-  aspc-api:slim
+git rm -f Dockerfile.vercel   # or: mv Dockerfile.vercel Dockerfile.vercel.bak
+git push
 ```
+
+For the API project, copy the install helper to the repo root (API root = `.`):
+
+```bash
+cp deploy/vercel/vercel.json ./vercel.json
+git add vercel.json pyproject.toml
+git commit -m "Configure Vercel FastAPI entrypoint and install extras"
+git push
+```
+
+(`frontend/` is a separate Vercel project with Root Directory `frontend`, so this root `vercel.json` does not affect the UI.)
+
+### 1. API project (`aspc-api` / `aspc-plum` / …)
+
+1. Framework: **FastAPI**
+2. Root Directory: **`.`** (repo root)
+3. Install Command (if not using root `vercel.json`):  
+   `pip install -e ".[apps,data,render]"`
+4. Env:
+
+```text
+ASPC_AUTH_ENABLED=true
+ASPC_JWT_SECRET=some-long-random-string
+ASPC_ADMIN_USERNAME=admin
+ASPC_ADMIN_PASSWORD=admin
+ASPC_API_KEYS=demokey
+ASPC_PERSISTENCE_BACKEND=sqlite
+ASPC_SQLITE_PATH=/tmp/aspc.db
+ASPC_CORS_ORIGINS=https://aspc-web.vercel.app
+ASPC_DEV_INSECURE=1
+```
+
+`ASPC_DEV_INSECURE=1` is required if you use password `admin` or a default JWT secret (startup refuses those otherwise). Use only for a private demo.
+
+5. Redeploy.
+6. Check:
+
+```bash
+curl -sS https://YOUR-API.vercel.app/health
+curl -sS https://YOUR-API.vercel.app/
+```
+
+Expect JSON, not `NOT_FOUND`.
+
+### 2. Frontend project (`aspc-web`)
+
+1. Root Directory: **`frontend`**
+2. Framework: **Next.js**
+3. Env (must match the **working** API URL):
+
+```text
+NEXT_PUBLIC_API_URL=https://YOUR-API.vercel.app
+NEXT_PUBLIC_WS_URL=wss://YOUR-API.vercel.app
+```
+
+4. Redeploy frontend after changing these (baked at build time).
+
+### 3. Login
+
+Use `ASPC_ADMIN_USERNAME` / `ASPC_ADMIN_PASSWORD` from the API env (e.g. `admin` / `admin` if set as above).
+
+## Optional: Docker API image
+
+[`Dockerfile.api`](Dockerfile.api) remains for local slim image tests or if you prefer Docker later. Native FastAPI is simpler on Vercel.
 
 ## Brother demo choice
 
 | Goal | Use |
 |------|-----|
-| Analyze in the cloud (UI + API only) | This slim Vercel path |
+| Analyze in the cloud | This slim Vercel path |
 | Live + manufacturing sim | Compose on your PC + ngrok |

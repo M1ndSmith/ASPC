@@ -16,6 +16,9 @@ dependencies = [
     "numpy>=1.26",
     "scipy>=1.11",
     "pydantic>=2.5",
+    # Hartigan dip test for the multimodality STOP gate. The built-in fallback
+    # heuristic only catches well-separated mixtures, so ship the real test.
+    "diptest>=0.9",
 ]
 
 [project.optional-dependencies]
@@ -99,7 +102,13 @@ packages = [
     "services",
     "services.stream_engine",
     "services.mqtt_bridge",
+    "resilience_data",
+    "resilience_data.generators",
+    "sample_data",
 ]
+
+[tool.setuptools.package-data]
+resilience_data = ["MANIFEST.json", "README.md", "cases/**/*.csv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -135,3 +144,7 @@ warn_return_any = false
 warn_unused_ignores = true
 check_untyped_defs = true
 packages = ["spc_core"]
+
+# Vercel native FastAPI deploy (slim UI+API path). See deploy/vercel/README.md.
+[tool.vercel]
+entrypoint = "apps.api.main:app"
