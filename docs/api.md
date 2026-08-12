@@ -16,11 +16,13 @@ Most analyze / history endpoints depend on `get_current_user`:
 - If `auth.enabled` / `ASPC_AUTH_ENABLED` is **false**, requests proceed as anonymous.
 - If enabled, a valid Bearer JWT is required.
 
-Obtain a token (password must match `ASPC_ADMIN_PASSWORD`, default `admin`; any username is accepted):
+Obtain a token (password must match `ASPC_ADMIN_PASSWORD`; username must match
+`ASPC_ADMIN_USERNAME`, default `admin`). Startup refuses the default password
+`admin` and an empty API-key list unless `ASPC_DEV_INSECURE=1`:
 
 ```bash
 curl -s -X POST http://localhost:8000/auth/token \
-  -d 'username=operator&password=admin'
+  -d 'username=admin&password=$ASPC_ADMIN_PASSWORD'
 # → {"access_token":"…","token_type":"bearer"}
 ```
 
@@ -29,10 +31,10 @@ curl -s -X POST http://localhost:8000/auth/token \
 Required for stream mutations and alert ack (`require_api_key`):
 
 - Keys from config `auth.api_keys` or `ASPC_API_KEYS` (comma-separated)
-- If **no keys configured**, the handler allows the request in dev mode (`"dev"`)
+- If **no keys configured**, requests fail closed unless `ASPC_DEV_INSECURE=1`
 
 ```bash
-curl -H "X-API-Key: demokey" -H "Authorization: Bearer $TOKEN" …
+curl -H "X-API-Key: $ASPC_API_KEY" -H "Authorization: Bearer $TOKEN" …
 ```
 
 ## Common response shape

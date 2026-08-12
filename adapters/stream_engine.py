@@ -167,11 +167,15 @@ class StreamEngine:
     def handle_observation(
         self,
         stream_key: str,
-        value: float,
+        value: float | list[float],
         ts: datetime | None = None,
         **meta: Any,
     ) -> list[Signal]:
-        """Evaluate one observation; write raw + any OOC events; publish live; return signals."""
+        """Evaluate one observation; write raw + any OOC events; publish live; return signals.
+
+        Scalar charts (I-MR, EWMA, …) expect a float. Xbar-R / Xbar-S expect a
+        non-empty list of subgroup members; the subgroup mean is persisted and plotted.
+        """
         ev = self._evaluators.get(stream_key)
         if ev is None:
             raise KeyError(f"Stream '{stream_key}' is not registered")
@@ -183,18 +187,41 @@ class StreamEngine:
         elif ts.tzinfo is None:
             ts = ts.replace(tzinfo=UTC)
 
+        if isinstance(value, (list, tuple)):
+            subgroup = [float(v) for v in value]
+            if not subgroup:
+                raise ValueError("Empty subgroup observation")
+            if not ev.is_subgroup_chart:
+                raise ValueError(
+                    f"{ev.limits.chart_type.value} expects scalar observations; "
+                    f"got subgroup of size {len(subgroup)}"
+                )
+            plotted = float(sum(subgroup) / len(subgroup))
+        else:
+            if ev.is_subgroup_chart:
+                raise ValueError(
+                    f"{ev.limits.chart_type.value} plots subgroup means; "
+                    "send value as a JSON list of subgroup observations"
+                )
+            subgroup = None
+            plotted = float(value)
+
         limits_version = self._limits_versions[stream_key]
         self.repo.save_raw_measurement(
             stream_key,
             ts,
-            float(value),
+            plotted,
             limits_version=limits_version,
             quality_flag=meta.get("quality_flag"),
             machine_id=meta.get("machine_id"),
             gage_id=meta.get("gage_id"),
         )
 
-        signals = ev.observe(float(value))
+        if subgroup is not None:
+            signals = ev.observe_subgroup(subgroup)
+        else:
+            signals = ev.observe(plotted)
+
         for sig in signals:
             inserted = self.repo.save_ooc_event(
                 stream_key,
@@ -222,7 +249,7 @@ class StreamEngine:
         payload = {
             "type": "point",
             "stream_key": stream_key,
-            "value": float(value),
+            "value": plotted,
             "timestamp": ts.isoformat(),
             "ts": ts.isoformat(),
             "index": ev.index,
@@ -247,7 +274,10 @@ class StreamEngine:
         return signals
 
     def handle_message(self, msg: dict[str, Any]) -> list[Signal]:
-        """Handle a source dict ``{key, value, timestamp}`` (plus optional meta)."""
+        """Handle a source dict ``{key, value, timestamp}`` (plus optional meta).
+
+        ``value`` may be a scalar or a list (Xbar subgroup).
+        """
         key = str(msg.get("key") or msg.get("stream_key") or "")
         if not key:
             raise ValueError(f"Message missing key: {msg!r}")
@@ -267,6 +297,8 @@ class StreamEngine:
             for k, v in msg.items()
             if k not in ("key", "stream_key", "value", "timestamp", "ts")
         }
+        if isinstance(value, (list, tuple)):
+            return self.handle_observation(key, [float(v) for v in value], ts, **meta)
         return self.handle_observation(key, float(value), ts, **meta)
 
     def _publish(self, stream_key: str, payload: dict[str, Any]) -> None:

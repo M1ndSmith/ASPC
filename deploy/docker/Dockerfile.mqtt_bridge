@@ -15,6 +15,7 @@ COPY adapters ./adapters
 COPY apps ./apps
 COPY services ./services
 COPY sample_data ./sample_data
+COPY resilience_data ./resilience_data
 
 RUN uv pip install --system --no-cache -e ".[apps,stream]" \
     && (uv pip install --system --no-cache kafka-python-ng || uv pip install --system --no-cache kafka-python)

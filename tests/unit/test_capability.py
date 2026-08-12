@@ -73,3 +73,34 @@ def test_auto_routes_nonnormal_to_nonparametric_or_transformed():
     # transformed (when Box-Cox/YJ restores normality and specs transform).
     if not check_normality(values).is_normal:
         assert result.method in ("nonparametric", "transformed")
+
+
+def test_transform_spec_failure_recorded_in_notes(monkeypatch):
+    """Spec transform failures must not silent-fallthrough without a reason."""
+    from types import SimpleNamespace
+
+    import spc_core.capability as cap_mod
+    import spc_core.normality as norm_mod
+
+    values = list(np.random.default_rng(0).normal(10, 1, 80))
+    fake_tr = SimpleNamespace(
+        became_normal=True,
+        applied="LOG",
+        label="log(x)",
+        lam=None,
+        values=np.asarray(values),
+    )
+    monkeypatch.setattr(norm_mod, "apply_transform", lambda *a, **k: fake_tr)
+    monkeypatch.setattr(
+        norm_mod, "check_normality", lambda *a, **k: SimpleNamespace(is_normal=False)
+    )
+    monkeypatch.setattr(
+        cap_mod,
+        "_transform_specs",
+        lambda *a, **k: (_ for _ in ()).throw(ValueError("bad specs")),
+    )
+    result = capability_analysis(values, usl=12.0, lsl=8.0)
+    assert result.method == "nonparametric"
+    notes = result.notes["normality"]
+    assert notes["path"] == "nonparametric_after_transform_error"
+    assert "bad specs" in notes["transform_error"]

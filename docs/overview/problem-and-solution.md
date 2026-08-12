@@ -39,7 +39,7 @@ That is the gap ASPC is built to fill.
 
 [`spc_core/`](../../spc_core/) is a pure statistics engine: Shewhart (I-MR, Xbar-R, Xbar-S, P, NP, C, U), EWMA, CUSUM, Nelson / Western Electric / Wheeler rulesets, Gage R&R, bias / linearity / stability, Cp/Cpk/Pp/Ppk with transform and nonparametric paths.
 
-Every advertised `ChartType` has real math — no stubs. Correctness is exercised by a [55-case resilience catalog](../../resilience_data/) that asserts *which* rule fired and *which* gate status was set, not just “some signal count.”
+Every advertised `ChartType` has real math — no stubs. Correctness is exercised by a [55-case resilience catalog](../../resilience_data/) that asserts gate statuses and, where the scenario pins a mechanism, *which* rule fired (not only a vacuous signal count).
 
 ### Gated Phase I before go-live
 

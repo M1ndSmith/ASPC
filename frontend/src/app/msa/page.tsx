@@ -52,6 +52,7 @@ export default function MsaPage() {
     <div>
       <PageHeader
         title="MSA"
+        hideTitle
         subtitle="Gage R&R, bias, linearity, stability — plus continuous MSA drift placeholder"
       />
 
@@ -96,7 +97,7 @@ export default function MsaPage() {
         <Panel title="Batch MSA result" className="mb-6">
           <div className="mb-3 text-sm">
             <span className="text-aspc-muted">Run </span>
-            <span className="font-mono text-aspc-cyan">{result.run_id}</span>
+            <span className="font-mono text-aspc-accent">{result.run_id}</span>
             {msa?.study_type && (
               <>
                 <span className="mx-2 text-aspc-muted">·</span>
@@ -128,7 +129,7 @@ export default function MsaPage() {
               </table>
             </div>
           ) : (
-            <pre className="max-h-80 overflow-auto rounded-lg bg-aspc-bg p-3 text-xs text-aspc-muted">
+            <pre className="max-h-80 overflow-auto rounded-2xl bg-aspc-elevated p-3 text-xs text-aspc-muted">
               {JSON.stringify(result.report, null, 2)}
             </pre>
           )}
@@ -136,13 +137,13 @@ export default function MsaPage() {
       )}
 
       <Panel title="Continuous MSA drift">
-        <div className="rounded-lg border border-dashed border-aspc-border bg-aspc-bg/40 px-4 py-10 text-center">
-          <p className="font-mono text-xs uppercase tracking-widest text-aspc-cyan">Coming online</p>
+        <div className="rounded-2xl border border-dashed border-aspc-border bg-aspc-elevated/40 px-4 py-10 text-center">
+          <p className="text-xs font-medium uppercase tracking-widest text-aspc-accent">Coming online</p>
           <p className="mx-auto mt-2 max-w-md text-sm text-aspc-muted">
             Live bias EWMA (α=0.2), rolling R, and calibration alerts from ContinuousMSA will render
             here once the stream engine publishes drift metrics on the selected stream.
           </p>
-          <div className="mx-auto mt-6 h-24 max-w-lg rounded bg-gradient-to-r from-aspc-border/20 via-aspc-cyan/10 to-aspc-border/20" />
+          <div className="mx-auto mt-6 h-24 max-w-lg rounded-2xl bg-gradient-to-r from-aspc-border/20 via-aspc-accent/15 to-aspc-border/20" />
         </div>
       </Panel>
     </div>

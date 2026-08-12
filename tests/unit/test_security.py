@@ -131,3 +131,38 @@ def test_go_live_rejects_unfrozen_limits(secure_client, tmp_path):
     assert r.status_code in (409, 501)
     if r.status_code == 409:
         assert "not frozen" in r.json()["detail"].lower() or "STOP" in r.json()["detail"]
+
+
+def test_startup_refuses_default_admin_password(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASPC_AUTH_ENABLED", "true")
+    monkeypatch.setenv("ASPC_DEV_INSECURE", "0")
+    monkeypatch.setenv("ASPC_JWT_SECRET", "unit-test-secret-not-default")
+    monkeypatch.setenv("ASPC_API_KEYS", "test-key")
+    monkeypatch.setenv("ASPC_ADMIN_PASSWORD", "admin")
+    monkeypatch.setenv("ASPC_SQLITE_PATH", str(tmp_path / "sec.db"))
+
+    import apps.api.main as api_main
+    import apps.config as config_mod
+
+    config_mod._config = None
+    api_main.cfg = config_mod.get_config()
+    with pytest.raises(RuntimeError, match="ASPC_ADMIN_PASSWORD"):
+        api_main._startup_security_checks()
+
+
+def test_startup_refuses_empty_api_keys(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASPC_AUTH_ENABLED", "true")
+    monkeypatch.setenv("ASPC_DEV_INSECURE", "0")
+    monkeypatch.setenv("ASPC_JWT_SECRET", "unit-test-secret-not-default")
+    monkeypatch.setenv("ASPC_API_KEYS", "")
+    monkeypatch.setenv("ASPC_ADMIN_PASSWORD", "s3cret")
+    monkeypatch.setenv("ASPC_SQLITE_PATH", str(tmp_path / "sec.db"))
+
+    import apps.api.main as api_main
+    import apps.config as config_mod
+
+    config_mod._config = None
+    api_main.cfg = config_mod.get_config()
+    api_main.cfg.config["auth"]["api_keys"] = []
+    with pytest.raises(RuntimeError, match="ASPC_API_KEYS"):
+        api_main._startup_security_checks()

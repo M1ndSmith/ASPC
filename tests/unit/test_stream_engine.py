@@ -171,3 +171,55 @@ def test_sqlite_repo_rejected_by_stream_engine():
     repo = SQLiteRepository(":memory:")
     with pytest.raises(TypeError, match="streaming"):
         StreamEngine(repo)
+
+
+def test_xbar_subgroup_observation_accepted():
+    import numpy as np
+    import pytest
+
+    from spc_core.limits import xbar_r_limits
+
+    rng = np.random.default_rng(0)
+    subs = [rng.normal(10.0, 0.5, size=5) for _ in range(25)]
+    limits = xbar_r_limits(subs)
+    repo = FakeStreamRepo()
+    engine = StreamEngine(repo)
+    engine.register("xbar-line", limits)
+
+    ts = datetime(2026, 1, 15, 15, 0, 0, tzinfo=UTC)
+    signals = engine.handle_observation("xbar-line", [10.0, 10.1, 9.9, 10.0, 10.05], ts)
+    assert signals == []
+    assert len(repo.raw) == 1
+    assert repo.raw[0]["value"] == pytest.approx(10.01, abs=1e-9)
+
+    # Scalar payload must fail clearly for Xbar streams
+    with pytest.raises(ValueError, match="subgroup means"):
+        engine.handle_observation("xbar-line", 10.0, ts)
+
+    # List payload must fail clearly for I-MR streams
+    imr = imr_limits([10.0, 10.1, 9.9, 10.05, 10.0, 10.02, 9.98, 10.01] * 4)
+    engine.register("imr-line", imr)
+    with pytest.raises(ValueError, match="scalar"):
+        engine.handle_observation("imr-line", [10.0, 10.1], ts)
+
+
+def test_handle_message_accepts_subgroup_list():
+    import numpy as np
+
+    from spc_core.limits import xbar_r_limits
+
+    rng = np.random.default_rng(1)
+    subs = [rng.normal(10.0, 0.5, size=5) for _ in range(25)]
+    limits = xbar_r_limits(subs)
+    repo = FakeStreamRepo()
+    engine = StreamEngine(repo)
+    engine.register("xbar-msg", limits)
+    signals = engine.handle_message(
+        {
+            "key": "xbar-msg",
+            "value": [10.0, 10.0, 10.0, 10.0, 10.0],
+            "timestamp": "2026-01-15T15:30:00+00:00",
+        }
+    )
+    assert signals == []
+    assert len(repo.raw) == 1

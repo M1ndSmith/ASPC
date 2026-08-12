@@ -8,7 +8,7 @@ import { limitAt } from "@/lib/format";
 const Plot = dynamic(() => import("react-plotly.js"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-72 items-center justify-center rounded-lg border border-aspc-border bg-aspc-panel text-sm text-aspc-muted">
+    <div className="flex h-72 items-center justify-center rounded-card border border-aspc-border bg-aspc-panel text-sm text-aspc-muted">
       Loading chart…
     </div>
   ),
@@ -63,7 +63,7 @@ export function ControlChart({
       type: "scatter",
       mode: "lines",
       name: "UCL",
-      line: { color: "#FF4D4F", width: 1.5, dash: "dash" },
+      line: { color: "#F97316", width: 1.5, dash: "dash" },
       hoverinfo: "y+name",
     },
     {
@@ -72,7 +72,7 @@ export function ControlChart({
       type: "scatter",
       mode: "lines",
       name: "CL",
-      line: { color: "#00D4FF", width: 1.5 },
+      line: { color: "#E8C547", width: 2 },
       hoverinfo: "y+name",
     },
     {
@@ -81,7 +81,7 @@ export function ControlChart({
       type: "scatter",
       mode: "lines",
       name: "LCL",
-      line: { color: "#FF4D4F", width: 1.5, dash: "dash" },
+      line: { color: "#F97316", width: 1.5, dash: "dash" },
       hoverinfo: "y+name",
     },
     {
@@ -90,8 +90,8 @@ export function ControlChart({
       type: "scatter",
       mode: "lines+markers",
       name: "Value",
-      line: { color: "#E8EEF7", width: 1.5 },
-      marker: { color: "#E8EEF7", size: 6 },
+      line: { color: "#F2F2F4", width: 1.5 },
+      marker: { color: "#F2F2F4", size: 6 },
     },
     {
       x: oocX,
@@ -99,28 +99,28 @@ export function ControlChart({
       type: "scatter",
       mode: "markers",
       name: "OOC",
-      marker: { color: "#FF4D4F", size: 10, symbol: "x", line: { width: 2, color: "#FF4D4F" } },
+      marker: { color: "#2DD4BF", size: 10, symbol: "x", line: { width: 2, color: "#2DD4BF" } },
     },
   ];
 
   const layout = {
-    title: { text: title, font: { color: "#E8EEF7", size: 14 }, x: 0, xanchor: "left" },
+    title: { text: title, font: { color: "#F2F2F4", size: 14 }, x: 0, xanchor: "left" },
     paper_bgcolor: "rgba(0,0,0,0)",
-    plot_bgcolor: "#0D1219",
-    font: { color: "#6B7A90", family: "IBM Plex Sans, sans-serif", size: 11 },
+    plot_bgcolor: "#141418",
+    font: { color: "#8A8A96", family: "Sora, sans-serif", size: 11 },
     margin: { t: 40, r: 16, b: 40, l: 48 },
     height,
     xaxis: {
       title: "Subgroup / Index",
-      gridcolor: "#1A2332",
+      gridcolor: "#2A2A32",
       zeroline: false,
-      color: "#6B7A90",
+      color: "#8A8A96",
     },
     yaxis: {
       title: "Value",
-      gridcolor: "#1A2332",
+      gridcolor: "#2A2A32",
       zeroline: false,
-      color: "#6B7A90",
+      color: "#8A8A96",
     },
     legend: {
       orientation: "h",
@@ -135,7 +135,7 @@ export function ControlChart({
   const config = { displayModeBar: false, responsive: true };
 
   return (
-    <div className="w-full overflow-hidden rounded-lg border border-aspc-border bg-aspc-panel p-2">
+    <div className="w-full overflow-hidden rounded-card border border-aspc-border bg-aspc-panel p-2 shadow-card">
       <Plot
         data={data}
         layout={layout}

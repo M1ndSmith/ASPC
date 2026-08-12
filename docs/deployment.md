@@ -14,13 +14,15 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 | `migrate` | `alembic upgrade head` (runs once before api/stream-engine) | — |
 | `api` | FastAPI | 8000 |
 | `frontend` | Next.js dashboard | 3000 |
-| `redpanda` | Kafka-compatible broker | 19092 (external), 9644 admin |
-| `mosquitto` | MQTT broker | 1883 |
-| `timescaledb` | Tier-1/Tier-2 persistence | 5433 (host → container 5432) |
-| `redis` | Live alert pub/sub | 6379 |
+| `redpanda` | Kafka-compatible broker | `127.0.0.1:19092`, `127.0.0.1:9644` |
+| `mosquitto` | MQTT broker | `127.0.0.1:1883` |
+| `timescaledb` | Tier-1/Tier-2 persistence | `127.0.0.1:5433` → 5432 |
+| `redis` | Live alert pub/sub | `127.0.0.1:6379` |
 | `stream-engine` | Kafka → Phase II eval → DB + Redis | — |
 | `mqtt-bridge` | MQTT → Redpanda | — |
-| `grafana` | Ops dashboards (`--profile ops`) | 3001 |
+| `grafana` | Ops dashboards (`--profile ops`) | `127.0.0.1:3001` |
+
+Infra ports (Redpanda, Mosquitto, Timescale, Redis, Grafana) bind to **loopback only** so they are not reachable from the LAN. API and frontend remain on `0.0.0.0` for local browser access.
 
 Secrets come from `deploy/compose/.env` (never commit real values):
 
@@ -28,14 +30,16 @@ Secrets come from `deploy/compose/.env` (never commit real values):
 - `ASPC_CORS_ORIGINS=http://localhost:3000`
 - `ASPC_TSDB_INIT=0` on api/stream-engine so only the migrate service applies schema
 
-Deferred ops (configure in your environment, not shipped as defaults): Mosquitto TLS/auth, Kafka DLQ, continuous aggregates, image digest pins.
+**MQTT auth (required before non-local use):** Compose ships Mosquitto with `allow_anonymous true` for local demos only ([`deploy/mosquitto/mosquitto.conf`](../deploy/mosquitto/mosquitto.conf)). Before exposing the stack beyond localhost, add a Mosquitto password file (or TLS client certs), set `allow_anonymous false`, and prefer keeping `1883` off the host network entirely.
 
-Frontend: `NEXT_PUBLIC_API_URL=http://localhost:8000`, `NEXT_PUBLIC_WS_URL=ws://localhost:8000`.
+Other deferred ops: Kafka DLQ, continuous aggregates, image digest pins.
+
+Frontend `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_WS_URL` are **Docker build-args** (Next.js bakes them at build time). Defaults are `http://localhost:8000` and `ws://localhost:8000`; override via compose `.env` and rebuild the frontend image.
 
 Ops profile:
 
 ```bash
-docker compose -f deploy/compose/docker-compose.yml --profile ops up -d
+docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env --profile ops up -d
 ```
 
 ## Docker images

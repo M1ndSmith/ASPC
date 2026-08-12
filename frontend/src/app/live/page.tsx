@@ -127,10 +127,11 @@ export default function LivePage() {
     <div>
       <PageHeader
         title="Live Monitoring"
+        hideTitle
         subtitle="Phase II stream against frozen limits — WebSocket chart + alert feed"
         actions={
           <span
-            className={`rounded border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${
+            className={`rounded-pill border px-3 py-1 text-[10px] font-semibold uppercase tracking-wider ${
               connected
                 ? "border-aspc-ok/40 bg-aspc-ok/15 text-aspc-ok"
                 : "border-aspc-border text-aspc-muted"
@@ -171,7 +172,7 @@ export default function LivePage() {
               value={streamKey || manualKey}
               disabled={!!streamKey}
               onChange={(e) => setManualKey(e.target.value)}
-              className="w-full rounded-lg border border-aspc-border bg-aspc-bg px-3 py-2 text-sm outline-none focus:border-aspc-cyan/50 disabled:opacity-50"
+              className="w-full rounded-2xl border border-aspc-border bg-aspc-elevated px-3 py-2.5 text-sm outline-none focus:border-aspc-accent/50 disabled:opacity-50"
             />
           </div>
           <div className="flex items-end gap-2">
@@ -181,7 +182,7 @@ export default function LivePage() {
             <button
               type="button"
               onClick={disconnect}
-              className="rounded-lg border border-aspc-border px-4 py-2 text-sm text-aspc-muted hover:text-aspc-text"
+              className="rounded-pill border border-aspc-border px-4 py-2.5 text-sm text-aspc-muted hover:text-aspc-text"
             >
               Disconnect
             </button>
@@ -214,7 +215,7 @@ export default function LivePage() {
             {alerts.map((a, i) => (
               <li
                 key={`${a.rule_id}-${a.index}-${i}`}
-                className="rounded-lg border border-aspc-stop/30 bg-aspc-stop/10 px-3 py-2 text-sm"
+                className="rounded-2xl border border-aspc-stop/30 bg-aspc-stop/10 px-3 py-2 text-sm"
               >
                 <div className="font-mono text-xs text-aspc-stop">
                   [{a.rule_id}] idx {a.index}

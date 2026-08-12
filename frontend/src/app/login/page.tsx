@@ -27,12 +27,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-aspc-border bg-aspc-panel p-8 shadow-glow">
+    <div className="flex min-h-screen items-center justify-center bg-aspc-bg px-4">
+      <div className="w-full max-w-md rounded-card border border-aspc-border bg-aspc-panel p-8 shadow-card">
         <div className="mb-8 text-center">
-          <div className="font-mono text-2xl font-bold tracking-[0.25em] text-aspc-cyan">ASPC</div>
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-aspc-accent text-aspc-bg shadow-glow">
+            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor">
+              <path d="M12 2a10 10 0 1 0 10 10h-4a6 6 0 1 1-6-6V2z" />
+            </svg>
+          </div>
+          <div className="text-2xl font-semibold tracking-wide text-aspc-accent">ASPC</div>
           <h1 className="mt-3 text-xl font-semibold text-aspc-text">Sign in</h1>
-          <p className="mt-1 text-sm text-aspc-muted">JWT auth against the ASPC API</p>
+          <p className="mt-1 text-sm text-aspc-muted">Operator console · JWT against the ASPC API</p>
         </div>
 
         {error && <ErrorBanner message={error} />}

@@ -33,7 +33,7 @@ uv lock
 | `resilience_data/` | Standards-mapped sad/happy path corpus |
 | `benchmarks/` | Performance + accuracy harnesses |
 | `frontend/` | Next.js operator UI |
-| `tests/` | unit + integration |
+| `tests/` | unit + integration + resilience |
 | `docs/` | This documentation |
 | `deploy/` | Docker + Compose |
 | `migrations/` | Alembic |
@@ -78,10 +78,10 @@ Configured in [`pyproject.toml`](../pyproject.toml):
 
 ```bash
 ruff check spc_core adapters apps services sample_data resilience_data scripts tests benchmarks
-mypy spc_core adapters apps   # packages listed in tool.mypy
+mypy spc_core   # tool.mypy.packages = ["spc_core"] only
 ```
 
-CI currently runs ruff non-blocking (`|| true`); treat failures as real before merge.
+CI runs **ruff as a blocking check** and **mypy on `spc_core` only** (adapters/apps/services are not type-gated yet).
 
 ## Benchmarks
 
@@ -110,9 +110,10 @@ Catalog names include `spc_individual_in_control`, `msa_gage_rr_excellent`, `cap
 
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml):
 
-1. **python** — setup-uv, `uv pip install --system -e ".[dev]"`, ruff, pytest, acceptance script (matrix 3.11 / 3.12)
-2. **frontend** — npm ci/lint/test/build
-3. **docker** — build API + frontend images
+1. **python** (3.11 / 3.12) — `uv pip install -e ".[dev]"`, blocking ruff, mypy `spc_core`, pytest (`not integration`, includes `tests/resilience`), `benchmarks/accuracy.py`, acceptance script
+2. **integration** — Timescale + Redis services; `tests/integration`
+3. **frontend** — npm ci/lint/test/build
+4. **docker** — build API + frontend images
 
 ## Conventions
 

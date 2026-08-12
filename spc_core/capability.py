@@ -224,6 +224,7 @@ def capability_analysis(values, usl, lsl, target=None, subgroups=None,
     # Try to normalize; if successful, compute parametric capability on the
     # transformed scale with correspondingly transformed specification limits.
     tr = apply_transform(arr, method="auto")
+    transform_error: str | None = None
     if tr.became_normal and tr.applied != "NONE":
         try:
             usl_t, lsl_t, target_t = _transform_specs(usl, lsl, target, tr)
@@ -237,17 +238,20 @@ def capability_analysis(values, usl, lsl, target=None, subgroups=None,
                 "path": "transformed_parametric",
             }
             return res
-        except Exception:
-            # Fall through to nonparametric if transform of specs fails.
-            pass
+        except Exception as exc:  # noqa: BLE001 — fall through to nonparametric
+            transform_error = f"{type(exc).__name__}: {exc}"
 
     res = nonparametric_capability(arr, usl, lsl, target, subgroups)
-    res.notes["normality"] = {
+    notes: dict = {
         "is_normal": False,
         "transform_tried": tr.applied,
         "transform_became_normal": tr.became_normal,
         "path": "nonparametric",
     }
+    if transform_error is not None:
+        notes["transform_error"] = transform_error
+        notes["path"] = "nonparametric_after_transform_error"
+    res.notes["normality"] = notes
     return res
 
 

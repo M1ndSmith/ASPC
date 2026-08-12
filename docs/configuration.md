@@ -16,18 +16,18 @@ Application config is YAML defaults merged with environment overrides. Sources:
 |-----|---------|---------|
 | `host` | `0.0.0.0` | Bind address |
 | `port` | `8000` | HTTP port |
-| `cors_origins` | `["*"]` | CORS allow list |
+| `cors_origins` | `["http://localhost:3000", "http://127.0.0.1:3000"]` | CORS allow list |
 
 ### `auth`
 
 | Key | Default | Meaning |
 |-----|---------|---------|
 | `enabled` | `true` | Require JWT on protected routes |
-| `jwt_secret` | `change-me-in-production` | HS256 secret |
+| `jwt_secret` | `change-me-in-production` (refused at startup unless `ASPC_DEV_INSECURE=1`) | HS256 secret |
 | `jwt_algorithm` | `HS256` | JWT algorithm |
 | `jwt_expire_minutes` | `60` | Token lifetime |
-| `admin_password` | `admin` | Password accepted by `/auth/token` |
-| `api_keys` | `[]` | Allowed `X-API-Key` values |
+| `admin_password` | `admin` (refused at startup unless `ASPC_DEV_INSECURE=1`) | Password accepted by `/auth/token` |
+| `api_keys` | `[]` (refused at startup unless `ASPC_DEV_INSECURE=1`) | Allowed `X-API-Key` values |
 
 ### `uploads` / `reports`
 

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,8 +6,8 @@
 
 :root {
   color-scheme: dark;
-  --aspc-bg: #080b10;
-  --aspc-cyan: #00d4ff;
+  --aspc-bg: #0b0b0f;
+  --aspc-accent: #e8c547;
 }
 
 html,
@@ -16,12 +16,9 @@ body {
 }
 
 body {
-  background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(0, 212, 255, 0.08), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(0, 80, 120, 0.12), transparent),
-    var(--aspc-bg);
-  color: #e8eef7;
-  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  background: var(--aspc-bg);
+  color: #f2f2f4;
+  font-family: "Sora", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -30,22 +27,7 @@ body {
 }
 
 ::selection {
-  background: rgba(0, 212, 255, 0.25);
-}
-
-/* Subtle grid texture */
-body::before {
-  content: "";
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(26, 35, 50, 0.35) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(26, 35, 50, 0.35) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
-  opacity: 0.4;
-  z-index: 0;
+  background: rgba(232, 197, 71, 0.28);
 }
 
 #__next,

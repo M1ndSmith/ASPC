@@ -54,6 +54,7 @@ export default function CapabilityPage() {
     <div>
       <PageHeader
         title="Capability Study"
+        hideTitle
         subtitle="Cp / Cpk / Pp / Ppk against specification limits"
       />
 
@@ -103,7 +104,7 @@ export default function CapabilityPage() {
         <Panel title="Results">
           <div className="mb-4 text-sm">
             <span className="text-aspc-muted">Run </span>
-            <span className="font-mono text-aspc-cyan">{result.run_id}</span>
+            <span className="font-mono text-aspc-accent">{result.run_id}</span>
           </div>
           {cap ? (
             <div className="overflow-x-auto">
@@ -119,7 +120,7 @@ export default function CapabilityPage() {
                     cap[k] !== undefined && cap[k] !== null ? (
                       <tr key={k} className="border-b border-aspc-border/50">
                         <td className="py-2.5 pr-4 font-mono uppercase text-aspc-muted">{k}</td>
-                        <td className="py-2.5 font-mono text-lg text-aspc-cyan">
+                        <td className="py-2.5 font-mono text-lg text-aspc-accent">
                           {typeof cap[k] === "number" ? (cap[k] as number).toFixed(4) : String(cap[k])}
                         </td>
                       </tr>
@@ -129,7 +130,7 @@ export default function CapabilityPage() {
               </table>
             </div>
           ) : (
-            <pre className="max-h-96 overflow-auto rounded-lg bg-aspc-bg p-3 text-xs text-aspc-muted">
+            <pre className="max-h-96 overflow-auto rounded-2xl bg-aspc-elevated p-3 text-xs text-aspc-muted">
               {JSON.stringify(result.report, null, 2)}
             </pre>
           )}

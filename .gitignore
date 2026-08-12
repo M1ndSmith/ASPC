@@ -190,3 +190,5 @@ deploy/compose/data/
 # Local working notes (keep on disk, never commit)
 refactoring elements/
 benchmarks/
+.vercel
+.env*

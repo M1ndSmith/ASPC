@@ -66,6 +66,7 @@ export default function AnalyzePage() {
     <div>
       <PageHeader
         title="Control Chart Analysis"
+        hideTitle
         subtitle="Upload CSV → POST /analyze/control-chart → gates, checklist, Plotly chart"
       />
 
@@ -110,7 +111,7 @@ export default function AnalyzePage() {
             <div className="flex flex-wrap gap-4 text-sm">
               <div>
                 <span className="text-aspc-muted">Run ID </span>
-                <span className="font-mono text-aspc-cyan">{result.run_id}</span>
+                <span className="font-mono text-aspc-accent">{result.run_id}</span>
               </div>
               <div>
                 <span className="text-aspc-muted">Type </span>
@@ -147,7 +148,7 @@ export default function AnalyzePage() {
 
           {!report && (
             <Panel title="Report JSON">
-              <pre className="max-h-96 overflow-auto rounded-lg bg-aspc-bg p-3 text-xs text-aspc-muted">
+              <pre className="max-h-96 overflow-auto rounded-2xl bg-aspc-elevated p-3 text-xs text-aspc-muted">
                 {JSON.stringify(result.report, null, 2)}
               </pre>
             </Panel>

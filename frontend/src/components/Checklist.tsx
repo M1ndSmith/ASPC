@@ -4,7 +4,7 @@ import type { ChecklistItem, Phase1Checklist } from "@/lib/types";
 
 function ItemRow({ item }: { item: ChecklistItem }) {
   return (
-    <li className="flex items-start gap-3 rounded-lg border border-aspc-border bg-aspc-bg/60 px-3 py-2.5">
+    <li className="flex items-start gap-3 rounded-2xl border border-aspc-border bg-aspc-elevated/60 px-3 py-2.5">
       <span
         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
           item.passed

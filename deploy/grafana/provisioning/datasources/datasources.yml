@@ -1,0 +1,19 @@
+# Minimal Grafana provisioning so `--profile ops` mounts succeed.
+# Replace / extend with real Timescale dashboards as needed.
+apiVersion: 1
+
+datasources:
+  - name: ASPC TimescaleDB
+    type: postgres
+    access: proxy
+    url: timescaledb:5432
+    user: aspc
+    database: aspc
+    isDefault: true
+    editable: true
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: true
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}

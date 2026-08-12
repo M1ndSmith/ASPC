@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import queue
 import threading
 from collections.abc import AsyncIterator, Iterator
@@ -16,14 +17,20 @@ from typing import Any
 
 from adapters.stream import ObservationSource
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class Observation:
-    """Normalized measurement from a live source."""
+    """Normalized measurement from a live source.
+
+    ``value`` is a scalar for I-MR / attribute / EWMA / CUSUM streams, or a list
+    of floats for Xbar-R / Xbar-S subgroup payloads.
+    """
 
     key: str
     ts: datetime
-    value: float
+    value: float | list[float]
     raw: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
@@ -80,7 +87,13 @@ def _parse_payload(payload: bytes | str | dict, *, default_key: str = "default")
         value = data.get("measurement") or data.get("v")
     if value is None:
         raise ValueError(f"Observation payload missing value: {data!r}")
-    return Observation(key=key, ts=ts, value=float(value), raw=dict(data))
+    if isinstance(value, (list, tuple)):
+        parsed: float | list[float] = [float(v) for v in value]
+        if not parsed:
+            raise ValueError(f"Observation payload has empty subgroup: {data!r}")
+    else:
+        parsed = float(value)
+    return Observation(key=key, ts=ts, value=parsed, raw=dict(data))
 
 
 class _AsyncSourceBase:
@@ -266,7 +279,13 @@ class MQTTSource(_AsyncSourceBase, ObservationSource):
                 try:
                     q.put(obs.as_dict(), timeout=5.0)
                 except queue.Full:
-                    pass  # drop under backpressure rather than block the network thread
+                    # Drop under backpressure rather than block the network thread,
+                    # but surface the loss so Phase II ARL claims are not silently wrong.
+                    logger.warning(
+                        "MQTT backpressure: dropped observation key=%s topic=%s (queue full)",
+                        obs.key,
+                        topic_str,
+                    )
             except BaseException as exc:  # noqa: BLE001
                 q.put(exc)
 

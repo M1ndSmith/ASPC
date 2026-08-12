@@ -50,11 +50,12 @@ export default function RunDetailPage() {
     <div>
       <PageHeader
         title="Run Report"
+        hideTitle
         subtitle={runId ? shortId(runId, 20) : "—"}
         actions={
           <Link
             href="/runs"
-            className="rounded-lg border border-aspc-border px-3 py-1.5 text-xs text-aspc-muted hover:text-aspc-text"
+            className="rounded-pill border border-aspc-border px-3 py-1.5 text-xs text-aspc-muted hover:text-aspc-text"
           >
             ← All runs
           </Link>
@@ -70,7 +71,7 @@ export default function RunDetailPage() {
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
               <div>
                 <dt className="text-aspc-muted">Run ID</dt>
-                <dd className="font-mono text-aspc-cyan">{data.run_id}</dd>
+                <dd className="font-mono text-aspc-accent">{data.run_id}</dd>
               </div>
               <div>
                 <dt className="text-aspc-muted">Type</dt>
@@ -96,7 +97,7 @@ export default function RunDetailPage() {
                 href={reportUrl(runId)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-aspc-cyan hover:underline"
+                className="text-sm text-aspc-accent hover:underline"
               >
                 Open HTML report ↗
               </a>
@@ -142,7 +143,7 @@ export default function RunDetailPage() {
                       capResult[k] !== undefined && capResult[k] !== null ? (
                         <tr key={k} className="border-b border-aspc-border/50">
                           <td className="py-2 pr-4 font-mono uppercase text-aspc-muted">{k}</td>
-                          <td className="py-2 font-mono text-aspc-cyan">
+                          <td className="py-2 font-mono text-aspc-accent">
                             {typeof capResult[k] === "number"
                               ? (capResult[k] as number).toFixed(4)
                               : String(capResult[k])}
@@ -185,7 +186,7 @@ export default function RunDetailPage() {
 
           {!report && !capResult && !msaResult?.result && (
             <Panel title="Report JSON">
-              <pre className="max-h-[32rem] overflow-auto rounded-lg bg-aspc-bg p-3 text-xs text-aspc-muted">
+              <pre className="max-h-[32rem] overflow-auto rounded-2xl bg-aspc-elevated p-3 text-xs text-aspc-muted">
                 {JSON.stringify(data.report, null, 2)}
               </pre>
             </Panel>

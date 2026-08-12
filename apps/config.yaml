@@ -1,9 +1,11 @@
 # ASPC application configuration
+# Insecure placeholders below are refused at API startup unless ASPC_DEV_INSECURE=1.
+# Prefer env overrides (see env.example) for real deployments.
 
 api:
   host: "0.0.0.0"
   port: 8000
-  cors_origins: ["*"]
+  cors_origins: ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 auth:
   enabled: true

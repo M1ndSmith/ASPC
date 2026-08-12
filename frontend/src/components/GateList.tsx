@@ -30,11 +30,11 @@ export function GateList({ gates }: { gates: Gate[] }) {
       {gates.map((g, i) => (
         <li
           key={`${g.step}-${i}`}
-          className="flex items-start gap-3 rounded-lg border border-aspc-border bg-aspc-bg/60 px-3 py-2.5"
+          className="flex items-start gap-3 rounded-2xl border border-aspc-border bg-aspc-elevated/60 px-3 py-2.5"
         >
           <Badge status={g.status} />
           <div className="min-w-0 flex-1">
-            <div className="font-mono text-xs font-medium text-aspc-cyan">{g.step}</div>
+            <div className="font-mono text-xs font-medium text-aspc-accent">{g.step}</div>
             <p className="mt-0.5 text-sm text-aspc-text/90">{g.reason}</p>
           </div>
         </li>

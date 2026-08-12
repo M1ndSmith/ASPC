@@ -129,6 +129,9 @@ def main(argv: list[str] | None = None) -> int:
                         msg.get("value"),
                         [s.rule_id for s in signals],
                     )
+            except ValueError as exc:
+                # Chart/payload mismatch (e.g. scalar on Xbar) — do not hide as a generic failure.
+                logger.error("Rejecting observation for %s: %s (msg=%s)", key, exc, msg)
             except Exception:  # noqa: BLE001
                 logger.exception("Failed handling message %s", msg)
     except ImportError as exc:
