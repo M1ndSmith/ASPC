@@ -1,21 +1,24 @@
-# Core Data Science & Statistics
-pandas>=2.0.0
-numpy>=1.24.0
-plotly>=5.14.0
-scipy>=1.10.0
+# ASPC dependencies — generated from pyproject.toml extras.
+# Prefer:  uv pip install -e ".[dev]"
+# Or:      uv sync
+#
+# Minimal core (library only):
+numpy>=1.26
+scipy>=1.11
+pydantic>=2.5
 
-# Environment & Configuration
-python-dotenv>=1.0.0
-pyyaml>=6.0.0
+# Apps (API / CLI)
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+pyyaml>=6.0
+python-dotenv>=1.0
+requests>=2.31
+python-jose[cryptography]>=3.3
+bcrypt>=4.0
+slowapi>=0.1.9
+prometheus-client>=0.20
+redis>=5.0
 
-# AI/LLM Framework
-langgraph
-langchain
-langchain-groq
-
-# Web Framework & API
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-python-multipart>=0.0.6
-requests>=2.31.0
-
+# Optional extras — install via uv pip install -e ".[data,render,stream,tsdb,dev]"
+# polars, plotly, aiokafka, aiomqtt, sqlalchemy, alembic, asyncpg, psycopg, pytest, ruff, mypy

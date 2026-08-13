@@ -1,0 +1,154 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aspc"
+version = "2.0.0"
+description = "ASPC - production Statistical Process Control platform: correct core, streaming, TimescaleDB, Next.js dashboard."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "ASPC" }]
+keywords = ["spc", "statistical-process-control", "msa", "gage-rr", "capability", "quality"]
+
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pydantic>=2.5",
+    # Hartigan dip test for the multimodality STOP gate. The built-in fallback
+    # heuristic only catches well-separated mixtures, so ship the real test.
+    "diptest>=0.9",
+]
+
+[project.optional-dependencies]
+data = [
+    "polars>=0.20",
+]
+render = [
+    "plotly>=5.18",
+]
+apps = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "python-multipart>=0.0.9",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "python-jose[cryptography]>=3.3",
+    "passlib[bcrypt]>=1.7",
+    "bcrypt>=4.0",
+    "slowapi>=0.1.9",
+    "structlog>=24.1",
+    "prometheus-client>=0.20",
+    "redis>=5.0",
+    "openpyxl>=3.1",
+]
+stream = [
+    "aiokafka>=0.10",
+    "aiomqtt>=2.0",
+]
+tsdb = [
+    "sqlalchemy[asyncio]>=2.0",
+    "alembic>=1.13",
+    "asyncpg>=0.29",
+    "psycopg[binary]>=3.1",
+    "greenlet>=3.0",
+]
+dev = [
+    "polars>=0.20",
+    "plotly>=5.18",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "python-multipart>=0.0.9",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "python-jose[cryptography]>=3.3",
+    "passlib[bcrypt]>=1.7",
+    "bcrypt>=4.0",
+    "slowapi>=0.1.9",
+    "structlog>=24.1",
+    "prometheus-client>=0.20",
+    "redis>=5.0",
+    "aiokafka>=0.10",
+    "aiomqtt>=2.0",
+    "sqlalchemy[asyncio]>=2.0",
+    "alembic>=1.13",
+    "asyncpg>=0.29",
+    "psycopg[binary]>=3.1",
+    "greenlet>=3.0",
+    "pytest>=7.4",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "hypothesis>=6.98",
+    "ruff>=0.4",
+    "mypy>=1.9",
+]
+all = [
+    "aspc[data,render,apps,stream,tsdb]",
+]
+
+[project.scripts]
+aspc = "apps.cli.main:main"
+aspc-api = "apps.api.main:run"
+aspc-stream-engine = "services.stream_engine.main:main"
+aspc-mqtt-bridge = "services.mqtt_bridge.main:main"
+
+[tool.setuptools]
+packages = [
+    "spc_core",
+    "adapters",
+    "apps",
+    "apps.api",
+    "apps.cli",
+    "services",
+    "services.stream_engine",
+    "services.mqtt_bridge",
+    "sample_data",
+]
+
+# resilience_data is a repo-local corpus (imported via pytest path), not an
+# installable package — keep it out of setuptools so CI/Vercel installs work
+# when the tree is absent from the git checkout.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "auto"
+markers = [
+    "integration: requires external services (Timescale/Redis); set ASPC_INTEGRATION=1",
+]
+addopts = "-q -p no:launch_testing -p no:launch_testing_ros -p no:launch_testing_ros_pytest_entrypoint"
+filterwarnings = [
+    "ignore::FutureWarning:scipy.*",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501", "UP042", "B905"]
+
+[tool.ruff.lint.per-file-ignores]
+"apps/api/main.py" = ["B008"]
+"apps/api/deps.py" = ["B008"]
+"apps/cli/main.py" = ["B008"]
+"adapters/persistence_tsdb.py" = ["E402"]
+"tests/**" = ["E402", "B011", "B017", "E731"]
+"tests/load/**" = ["E731"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_return_any = false
+warn_unused_ignores = true
+check_untyped_defs = true
+packages = ["spc_core"]
+
+# Kept for optional native FastAPI experiments. Preferred slim path uses
+# root Dockerfile.vercel (container) — see deploy/vercel/README.md.
+[tool.vercel]
+entrypoint = "apps.api.main:app"

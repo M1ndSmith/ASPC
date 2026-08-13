@@ -1,0 +1,135 @@
+# ASPC CI — Python core + frontend + Docker build
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install package with dev extras
+        run: uv pip install --system -e ".[dev]"
+      - name: Ruff
+        run: ruff check spc_core adapters apps services sample_data resilience_data combinatorial scripts tests benchmarks
+      - name: Mypy (spc_core)
+        run: mypy spc_core --ignore-missing-imports
+      - name: Pytest
+        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q --tb=short -m "not integration"
+      - name: Resilience judgment report
+        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python scripts/resilience_report.py
+      - name: Combinatorial sparse matrix
+        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m combinatorial run --mode sparse --max-sparse 40
+        continue-on-error: true
+      - name: Accuracy benchmarks
+        run: python benchmarks/accuracy.py
+      - name: Acceptance — no stubs, all ChartTypes real
+        run: |
+          python - <<'PY'
+          import pathlib
+          root = pathlib.Path(".")
+          bad = []
+          for p in list(root.glob("spc_core/**/*.py")) + list(root.glob("adapters/**/*.py")) + list(root.glob("apps/**/*.py")) + list(root.glob("services/**/*.py")):
+              text = p.read_text(encoding="utf-8")
+              if "raise NotImplementedError" in text:
+                  bad.append(str(p))
+          assert not bad, f"NotImplementedError stubs remain: {bad}"
+          from spc_core import ChartType, analyze_control_chart, establish
+          from spc_core.ewma import ewma_chart
+          from spc_core.cusum import cusum_chart
+          import numpy as np
+          x = np.random.default_rng(0).normal(10, 1, 40)
+          assert analyze_control_chart(x).chart_type == ChartType.I_MR
+          assert ewma_chart(x).limits.chart_type == ChartType.EWMA
+          assert cusum_chart(x).limits.chart_type == ChartType.CUSUM
+          pipe = establish(x)
+          recs = pipe.chart.to_records()
+          assert len(recs) == len(pipe.chart.plotted_values)
+          print("acceptance ok", len(recs), "records")
+          PY
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: [python]
+    services:
+      timescaledb:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_USER: aspc
+          POSTGRES_PASSWORD: aspc
+          POSTGRES_DB: aspc
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aspc -d aspc"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      - name: Install package with dev extras
+        run: uv pip install --system -e ".[dev]"
+      - name: Integration tests
+        env:
+          ASPC_INTEGRATION: "1"
+          ASPC_PERSISTENCE_BACKEND: timescale
+          ASPC_TIMESCALE_DSN: postgresql+psycopg://aspc:aspc@localhost:5432/aspc
+          ASPC_REDIS_URL: redis://localhost:6379/0
+          ASPC_AUTH_ENABLED: "false"
+          ASPC_DEV_INSECURE: "1"
+          ASPC_JWT_SECRET: ci-integration-secret
+        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q --tb=short tests/integration
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci || npm install
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [python]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f deploy/docker/Dockerfile.api -t aspc-api:ci .
+      - name: Build frontend image
+        run: docker build -f deploy/docker/Dockerfile.frontend -t aspc-frontend:ci .

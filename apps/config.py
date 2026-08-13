@@ -1,0 +1,305 @@
+"""Application config — YAML + env overrides."""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+from typing import Any
+
+try:
+    import yaml
+except ImportError:  # pragma: no cover
+    yaml = None
+
+from dotenv import load_dotenv
+
+DEFAULTS: dict[str, Any] = {
+    "api": {
+        "host": "0.0.0.0",
+        "port": 8000,
+        "cors_origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+    },
+    "auth": {
+        "enabled": True,
+        "jwt_secret": "change-me-in-production",
+        "jwt_algorithm": "HS256",
+        "jwt_expire_minutes": 60,
+        "admin_username": "admin",
+        "admin_password": "admin",
+        "api_keys": [],
+        # Optional demo users: [{username, password, role, tenant_id}]
+        "users": [],
+        "default_role": "admin",
+        "default_tenant_id": None,
+    },
+    "webhooks": {
+        "url": None,
+        "secret": None,
+    },
+    "uploads": {
+        "temp_directory": "var/uploads",
+        "max_file_size_mb": 10,
+        "allowed_extensions": [".csv", ".parquet", ".pq"],
+    },
+    "reports": {
+        "auto_generate": True,
+        "output_directory": "var/reports",
+        "include_plots": True,
+    },
+    "persistence": {
+        "backend": "sqlite",
+        "sqlite_path": "aspc.db",
+        "timescale_dsn": None,
+    },
+    "redis": {
+        "url": "redis://localhost:6379/0",
+    },
+    "kafka": {
+        "bootstrap": "localhost:9092",
+        "topic": "spc.measurements",
+    },
+    "spc": {
+        "ruleset": "nelson",
+        "min_phase1_points": 25,
+        "acf_threshold": 0.2,
+    },
+}
+
+
+class Config:
+    def __init__(self, config_path: str | Path | None = None):
+        root = Path(__file__).resolve().parents[1]  # repo root (apps/ -> ASPC/)
+        load_dotenv(root / ".env")
+
+        if config_path is None:
+            candidates = [
+                Path(__file__).parent / "config.yaml",
+                root / "config" / "config.yaml",
+            ]
+            config_path = next((p for p in candidates if p.exists()), candidates[0])
+
+        self.config_path = Path(config_path)
+        self.config = self._deep_merge(DEFAULTS, self._load_yaml())
+        self._apply_env_overrides()
+
+    def _load_yaml(self) -> dict:
+        if not self.config_path.exists() or yaml is None:
+            return {}
+        with self.config_path.open() as f:
+            data = yaml.safe_load(f) or {}
+        return data
+
+    def _apply_env_overrides(self) -> None:
+        """Environment variables win over YAML for deployment wiring."""
+        p = self.config.setdefault("persistence", {})
+        if os.getenv("ASPC_PERSISTENCE_BACKEND"):
+            p["backend"] = os.environ["ASPC_PERSISTENCE_BACKEND"]
+        if os.getenv("ASPC_SQLITE_PATH"):
+            p["sqlite_path"] = os.environ["ASPC_SQLITE_PATH"]
+        if os.getenv("ASPC_TIMESCALE_DSN") or os.getenv("DATABASE_URL"):
+            p["timescale_dsn"] = os.getenv("ASPC_TIMESCALE_DSN") or os.getenv("DATABASE_URL")
+
+        api = self.config.setdefault("api", {})
+        if os.getenv("ASPC_CORS_ORIGINS"):
+            raw = os.environ["ASPC_CORS_ORIGINS"]
+            api["cors_origins"] = [o.strip() for o in raw.split(",") if o.strip()]
+        if os.getenv("ASPC_API_HOST"):
+            api["host"] = os.environ["ASPC_API_HOST"]
+        if os.getenv("ASPC_API_PORT"):
+            api["port"] = int(os.environ["ASPC_API_PORT"])
+
+        auth = self.config.setdefault("auth", {})
+        if os.getenv("ASPC_JWT_SECRET"):
+            auth["jwt_secret"] = os.environ["ASPC_JWT_SECRET"]
+        if os.getenv("ASPC_ADMIN_USERNAME"):
+            auth["admin_username"] = os.environ["ASPC_ADMIN_USERNAME"]
+        if os.getenv("ASPC_ADMIN_PASSWORD"):
+            auth["admin_password"] = os.environ["ASPC_ADMIN_PASSWORD"]
+        if os.getenv("ASPC_API_KEYS"):
+            auth["api_keys"] = [k.strip() for k in os.environ["ASPC_API_KEYS"].split(",") if k.strip()]
+        if os.getenv("ASPC_AUTH_ENABLED") is not None:
+            auth["enabled"] = os.environ["ASPC_AUTH_ENABLED"].lower() in ("1", "true", "yes")
+        if os.getenv("ASPC_DEV_INSECURE") is not None:
+            auth["dev_insecure"] = os.environ["ASPC_DEV_INSECURE"].lower() in ("1", "true", "yes")
+        if os.getenv("ASPC_DEFAULT_ROLE"):
+            auth["default_role"] = os.environ["ASPC_DEFAULT_ROLE"]
+        if os.getenv("ASPC_TENANT_ID"):
+            auth["default_tenant_id"] = os.environ["ASPC_TENANT_ID"]
+
+        webhooks = self.config.setdefault("webhooks", {})
+        if os.getenv("ASPC_WEBHOOK_URL"):
+            webhooks["url"] = os.environ["ASPC_WEBHOOK_URL"]
+        if os.getenv("ASPC_WEBHOOK_SECRET"):
+            webhooks["secret"] = os.environ["ASPC_WEBHOOK_SECRET"]
+
+        redis = self.config.setdefault("redis", {})
+        if os.getenv("ASPC_REDIS_URL"):
+            redis["url"] = os.environ["ASPC_REDIS_URL"]
+        if os.getenv("ASPC_REDIS_TENANT_PREFIX") is not None:
+            redis["tenant_prefix"] = os.environ["ASPC_REDIS_TENANT_PREFIX"].lower() in (
+                "1",
+                "true",
+                "yes",
+            )
+
+        kafka = self.config.setdefault("kafka", {})
+        if os.getenv("ASPC_KAFKA_BOOTSTRAP"):
+            kafka["bootstrap"] = os.environ["ASPC_KAFKA_BOOTSTRAP"]
+        if os.getenv("ASPC_KAFKA_TOPIC"):
+            kafka["topic"] = os.environ["ASPC_KAFKA_TOPIC"]
+
+        # Serverless (Vercel) filesystems are read-only except /tmp.
+        uploads = self.config.setdefault("uploads", {})
+        if os.getenv("ASPC_UPLOAD_DIR"):
+            uploads["temp_directory"] = os.environ["ASPC_UPLOAD_DIR"]
+        elif os.getenv("VERCEL"):
+            uploads["temp_directory"] = "/tmp/aspc-uploads"
+
+        reports = self.config.setdefault("reports", {})
+        if os.getenv("ASPC_REPORT_DIR"):
+            reports["output_directory"] = os.environ["ASPC_REPORT_DIR"]
+        elif os.getenv("VERCEL"):
+            reports["output_directory"] = "/tmp/aspc-reports"
+
+    @staticmethod
+    def _deep_merge(base: dict, override: dict) -> dict:
+        out = dict(base)
+        for k, v in override.items():
+            if isinstance(v, dict) and isinstance(out.get(k), dict):
+                out[k] = Config._deep_merge(out[k], v)
+            else:
+                out[k] = v
+        return out
+
+    @property
+    def api_host(self) -> str:
+        return self.config["api"]["host"]
+
+    @property
+    def api_port(self) -> int:
+        return int(self.config["api"]["port"])
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return list(self.config["api"]["cors_origins"])
+
+    @property
+    def temp_upload_dir(self) -> str:
+        return self.config["uploads"]["temp_directory"]
+
+    @property
+    def max_file_size_bytes(self) -> int:
+        return int(self.config["uploads"]["max_file_size_mb"]) * 1024 * 1024
+
+    @property
+    def allowed_extensions(self) -> list[str]:
+        return list(self.config["uploads"]["allowed_extensions"])
+
+    @property
+    def report_dir(self) -> str:
+        return self.config["reports"]["output_directory"]
+
+    @property
+    def persistence_backend(self) -> str:
+        return str(self.config["persistence"]["backend"])
+
+    @property
+    def sqlite_path(self) -> str:
+        return self.config["persistence"]["sqlite_path"]
+
+    @property
+    def timescale_dsn(self) -> str | None:
+        return self.config["persistence"].get("timescale_dsn")
+
+    @property
+    def redis_url(self) -> str:
+        return str(self.config["redis"]["url"])
+
+    @property
+    def kafka_bootstrap(self) -> str:
+        return str(self.config["kafka"]["bootstrap"])
+
+    @property
+    def kafka_topic(self) -> str:
+        return str(self.config["kafka"].get("topic") or "spc.measurements")
+
+    @property
+    def jwt_secret(self) -> str:
+        return str(self.config["auth"]["jwt_secret"])
+
+    @property
+    def jwt_algorithm(self) -> str:
+        return str(self.config["auth"].get("jwt_algorithm") or "HS256")
+
+    @property
+    def jwt_expire_minutes(self) -> int:
+        return int(self.config["auth"].get("jwt_expire_minutes") or 60)
+
+    @property
+    def admin_username(self) -> str:
+        return str(self.config["auth"].get("admin_username") or "admin")
+
+    @property
+    def admin_password(self) -> str:
+        return str(self.config["auth"].get("admin_password") or "admin")
+
+    @property
+    def api_keys(self) -> list[str]:
+        return list(self.config["auth"].get("api_keys") or [])
+
+    @property
+    def auth_enabled(self) -> bool:
+        return bool(self.config["auth"].get("enabled", True))
+
+    @property
+    def dev_insecure(self) -> bool:
+        """Explicit opt-out for local/dev insecure auth shortcuts."""
+        return bool(self.config["auth"].get("dev_insecure", False))
+
+    @property
+    def auth_users(self) -> list[dict[str, Any]]:
+        return list(self.config["auth"].get("users") or [])
+
+    @property
+    def default_role(self) -> str:
+        return str(self.config["auth"].get("default_role") or "admin")
+
+    @property
+    def default_tenant_id(self) -> str | None:
+        tid = self.config["auth"].get("default_tenant_id")
+        return str(tid) if tid else None
+
+    @property
+    def webhook_url(self) -> str | None:
+        u = (self.config.get("webhooks") or {}).get("url")
+        return str(u) if u else None
+
+    @property
+    def webhook_secret(self) -> str | None:
+        s = (self.config.get("webhooks") or {}).get("secret")
+        return str(s) if s else None
+
+    @property
+    def redis_tenant_prefix(self) -> bool:
+        return bool((self.config.get("redis") or {}).get("tenant_prefix", False))
+
+    @property
+    def ruleset(self) -> str:
+        return self.config["spc"]["ruleset"]
+
+    @property
+    def acf_threshold(self) -> float:
+        return float(self.config["spc"]["acf_threshold"])
+
+    @property
+    def min_phase1_points(self) -> int:
+        return int(self.config["spc"].get("min_phase1_points") or 25)
+
+
+_config: Config | None = None
+
+
+def get_config() -> Config:
+    global _config
+    if _config is None:
+        _config = Config()
+    return _config

@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ASPC — As-Built System Document v2.0.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg:        #080B10;
+    --surface:   #0D1117;
+    --border:    #1C2333;
+    --cyan:      #00D4FF;
+    --green:     #39FF6E;
+    --orange:    #FF6B35;
+    --yellow:    #FFD449;
+    --purple:    #B57AFF;
+    --pink:      #FF4EA3;
+    --muted:     #4A5568;
+    --text:      #C8D0DC;
+    --bright:    #EDF2F7;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 0 32px 80px; }
+
+  .cover {
+    border-bottom: 1px solid var(--border);
+    padding: 72px 0 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -80px;
+    width: 480px; height: 480px;
+    background: radial-gradient(circle, #00D4FF08 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cover-badge {
+    display: inline-block;
+    background: #00D4FF12;
+    border: 1px solid #00D4FF44;
+    color: var(--cyan);
+    font-size: 10px;
+    letter-spacing: .2em;
+    padding: 5px 14px;
+    border-radius: 2px;
+    margin-bottom: 20px;
+  }
+  .cover h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 4vw, 46px);
+    font-weight: 800;
+    color: var(--bright);
+    line-height: 1.1;
+    margin-bottom: 16px;
+    letter-spacing: -.02em;
+  }
+  .cover h1 span { color: var(--cyan); }
+  .cover-sub {
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 680px;
+    margin-bottom: 32px;
+  }
+  .meta-row {
+    display: flex; gap: 32px; flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
+  .meta-item { font-size: 10px; }
+  .meta-item .label { color: var(--muted); letter-spacing: .1em; }
+  .meta-item .val   { color: var(--bright); margin-top: 3px; font-size: 12px; }
+
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cyan);
+    border-radius: 6px;
+    padding: 24px 28px;
+    margin: 48px 0;
+  }
+  .toc-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .15em;
+    color: var(--cyan);
+    margin-bottom: 16px;
+  }
+  .toc ol { padding-left: 18px; }
+  .toc li { margin-bottom: 8px; font-size: 12px; }
+  .toc a  { color: var(--text); text-decoration: none; }
+  .toc a:hover { color: var(--cyan); }
+  .toc .sub { color: var(--muted); font-size: 11px; }
+
+  .section { margin-bottom: 72px; }
+  .section-header {
+    display: flex; align-items: flex-start; gap: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+  }
+  .section-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--border);
+    line-height: 1;
+    flex-shrink: 0;
+    padding-top: 4px;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--bright);
+    line-height: 1.2;
+  }
+  .section-desc { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  .prose {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text);
+  }
+  .prose strong { color: var(--bright); }
+  .prose .hl-cyan   { color: var(--cyan); }
+  .prose .hl-orange { color: var(--orange); }
+  .prose .hl-green  { color: var(--green); }
+  .prose code {
+    background: #141C28;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: var(--cyan);
+  }
+
+  .callout {
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .callout.warn  { background:#FF6B3510; border:1px solid #FF6B3540; }
+  .callout.info  { background:#00D4FF10; border:1px solid #00D4FF40; }
+  .callout.good  { background:#39FF6E10; border:1px solid #39FF6E40; }
+  .callout.note  { background:#FFD44910; border:1px solid #FFD44940; }
+  .callout .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .callout.warn  .body { color: #FF9060; }
+  .callout.info  .body { color: #7ADCF7; }
+  .callout.good  .body { color: #6DFFAA; }
+  .callout.note  .body { color: #FFE07A; }
+
+  .diagram-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px 20px 20px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+  }
+  .diagram-label {
+    font-size: 10px;
+    letter-spacing: .15em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .diagram-label span { color: var(--cyan); }
+  .mermaid {
+    display: flex;
+    justify-content: center;
+    min-width: 500px;
+  }
+
+  .table-wrap { overflow-x: auto; margin-bottom: 20px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11.5px;
+  }
+  thead tr { background: #141C28; }
+  thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    font-weight: normal;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:nth-child(even) { background: #0A0E15; }
+  tbody td { padding: 10px 14px; color: var(--text); vertical-align: top; }
+  tbody td code {
+    background: #141C28;
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-size: 10.5px;
+    color: var(--cyan);
+  }
+  .tag {
+    display: inline-block;
+    border-radius: 3px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .05em;
+  }
+  .tag.green  { background:#39FF6E20; color:var(--green); border:1px solid #39FF6E44; }
+  .tag.orange { background:#FF6B3520; color:var(--orange); border:1px solid #FF6B3544; }
+  .tag.yellow { background:#FFD44920; color:var(--yellow); border:1px solid #FFD44944; }
+  .tag.purple { background:#B57AFF20; color:var(--purple); border:1px solid #B57AFF44; }
+  .tag.cyan   { background:#00D4FF20; color:var(--cyan);   border:1px solid #00D4FF44; }
+  .tag.pink   { background:#FF4EA320; color:var(--pink);   border:1px solid #FF4EA344; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+  }
+  .card-title { font-size: 11px; font-weight: 700; color: var(--bright); margin-bottom: 6px; }
+  .card-body  { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .checklist li { display: flex; gap: 10px; align-items: flex-start; font-size: 12px; }
+  .checklist .box {
+    width: 16px; height: 16px;
+    border: 1px solid var(--green);
+    border-radius: 3px;
+    flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .checklist .box::after { content: ''; width: 8px; height: 8px; background: #39FF6E44; border-radius: 2px; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 28px 0;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .footer span { color: var(--cyan); }
+
+  .mermaid svg { max-width: 100%; }
+
+  .subhead {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--bright);
+    letter-spacing: .04em;
+    margin: 28px 0 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ═══════════════════ COVER ═══════════════════ -->
+  <header class="cover">
+    <div class="cover-badge">AS-BUILT SYSTEM DOCUMENT · v2.0.0</div>
+    <h1>ASPC — Production<br><span>Statistical Process</span><br>Control Platform</h1>
+    <p class="cover-sub">
+      What the product actually does today: a pure <code>spc_core</code> library, gated Phase I → freeze → Phase II contract,
+      TimescaleDB-backed streaming, FastAPI/CLI surfaces, Next.js operator dashboard, and the security/ops hardening
+      that landed through Phases 1–4.
+    </p>
+    <div class="meta-row">
+      <div class="meta-item"><div class="label">STATUS</div><div class="val">Production / As-Built</div></div>
+      <div class="meta-item"><div class="label">VERSION</div><div class="val">spc_core 2.0.0 · API 2.0.0</div></div>
+      <div class="meta-item"><div class="label">DATE</div><div class="val">July 2026</div></div>
+      <div class="meta-item"><div class="label">STACK</div><div class="val">Python · FastAPI · TimescaleDB · Kafka · Redis · Next.js</div></div>
+      <div class="meta-item"><div class="label">STANDARDS</div><div class="val">AIAG MSA-4 · AIAG SPC · ISO 7870 · Six Sigma DMAIC</div></div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════ TOC ═══════════════════ -->
+  <nav class="toc">
+    <div class="toc-title">TABLE OF CONTENTS</div>
+    <ol>
+      <li><a href="#s1">System Overview &amp; Layered Architecture</a> <span class="sub">— pure core, adapters, apps</span></li>
+      <li><a href="#s2">The Gated Phase I Pipeline</a> <span class="sub">— establish → freeze → checklist</span></li>
+      <li><a href="#s3">Chart Selection &amp; Run Rules</a> <span class="sub">— 9 chart types, 3 rulesets</span></li>
+      <li><a href="#s4">Measurement System Analysis</a> <span class="sub">— static + continuous MSA</span></li>
+      <li><a href="#s5">Capability &amp; Six Sigma</a> <span class="sub">— Cp/Cpk, DPMO, sigma level</span></li>
+      <li><a href="#s6">Data Quality &amp; the SPC Record</a> <span class="sub">— cleaning rules + output schema</span></li>
+      <li><a href="#s7">Real-Time Architecture</a> <span class="sub">— MQTT → Kafka → StreamEngine → live UI</span></li>
+      <li><a href="#s8">Storage Architecture</a> <span class="sub">— SQLite vs Timescale, 7 tables</span></li>
+      <li><a href="#s9">Interfaces</a> <span class="sub">— API · CLI · Python · config</span></li>
+      <li><a href="#s10">Security, Operations &amp; Quality Gates</a> <span class="sub">— auth, compose, CI, tests</span></li>
+      <li><a href="#s11">Spec Coverage &amp; Known Gaps</a> <span class="sub">— MVP verdicts + honest limits</span></li>
+    </ol>
+  </nav>
+
+  <!-- ═══════════════════ S1: SYSTEM OVERVIEW ═══════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">01</div>
+      <div>
+        <div class="section-title">System Overview &amp; Layered Architecture</div>
+        <div class="section-desc">Pure core library, adapters for I/O and streaming, thin application surfaces</div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="icon">ℹ</div>
+      <div class="body"><strong>The pure-core rule.</strong> <code>spc_core/</code> has no I/O, no pandas, no polars, no FastAPI, no Redis. It accepts NumPy arrays and plain Python types and returns Pydantic models. Everything else — files, databases, brokers, HTML, WebSockets — lives in <code>adapters/</code>, <code>apps/</code>, or <code>services/</code>.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-label"><span>FIG 1.1</span> LAYERED ARCHITECTURE</div>
+      <div class="mermaid">
+flowchart TB
+    FE[Next.js Dashboard<br/>Live · Analyze · Capability · MSA · Runs]
+    API[FastAPI apps/api<br/>JWT · API keys · WebSocket]
+    CLI[CLI apps/cli<br/>control-chart · capability · msa · serve]
+    SE[stream-engine<br/>Kafka consumer · Phase II]
+    MB[mqtt-bridge<br/>MQTT → Kafka]
+
+    FE --> API
+    CLI --> CORE
+    API --> ADAPTERS
+    SE --> ADAPTERS
+    MB --> Kafka
+
+    subgraph apps_layer [Applications and Services]
+      API
+      CLI
+      SE
+      MB
+    end
+
+    subgraph adapters_layer [Adapters]
+      ADAPTERS[io_files · persistence · persistence_tsdb<br/>stream_engine · stream_sources<br/>render_plotly · archive · factory]
+    end
+
+    subgraph core_layer [spc_core — Pure Computation]
+      CORE[pipeline · charts · limits · rules<br/>evaluator · msa · capability<br/>normality · cleaning · models]
+    end
+
+    ADAPTERS --> CORE
+    Kafka[(Redpanda / Kafka)]
+    Redis[(Redis pub/sub)]
+    TSDB[(TimescaleDB)]
+    MQTT[(Mosquitto MQTT)]
+
+    MB --> MQTT
+    SE --> Kafka
+    SE --> Redis
+    SE --> TSDB
+    API --> Redis
+    API --> TSDB
+
+    style CORE fill:#081218,stroke:#00D4FF,color:#00D4FF
+    style ADAPTERS fill:#0d0818,stroke:#B57AFF,color:#C9A8FF
+    style FE fill:#081a0d,stroke:#39FF6E,color:#8FD9A8
+      </div>
+    </div>
+
+    <div class="subhead">CORE MODULES — spc_core/</div>
+    <div class="cards">
+      <div class="card"><div class="card-title">pipeline.py</div><div class="card-body">Gated Phase I master pipeline: <code>establish()</code>, <code>phase1_checklist()</code>, freeze/stop contract.</div></div>
+      <div class="card"><div class="card-title">charts.py</div><div class="card-body">Chart selection matrix and batch orchestrator <code>analyze_control_chart()</code>.</div></div>
+      <div class="card"><div class="card-title">limits.py</div><div class="card-body">Phase I limit math: I-MR, Xbar-R/S, P/NP/C/U.</div></div>
+      <div class="card"><div class="card-title">rules.py</div><div class="card-body">Stateful Nelson / Western Electric / Wheeler run-rule engine.</div></div>
+      <div class="card"><div class="card-title">evaluator.py</div><div class="card-body">Phase II <code>Phase2Evaluator</code> — fixed, variable-n, EWMA, CUSUM.</div></div>
+      <div class="card"><div class="card-title">ewma.py / cusum.py</div><div class="card-body">EWMA with time-varying limits; tabular two-sided CUSUM.</div></div>
+      <div class="card"><div class="card-title">msa.py</div><div class="card-body">Gage R&amp;R ANOVA/range, bias, linearity, stability, NDC, resolution gates.</div></div>
+      <div class="card"><div class="card-title">msa_stream.py</div><div class="card-body">Continuous MSA: reference injection and bias-drift alerts.</div></div>
+      <div class="card"><div class="card-title">capability.py</div><div class="card-body">Cp/Cpk/Pp/Ppk, DPMO ↔ sigma, parametric/transformed/nonparametric.</div></div>
+      <div class="card"><div class="card-title">normality.py</div><div class="card-body">Shapiro-Wilk / AD / KS, ACF gate, Box-Cox / log / Yeo-Johnson.</div></div>
+      <div class="card"><div class="card-title">multimodal.py</div><div class="card-body">Hartigan dip test — stratification STOP gate.</div></div>
+      <div class="card"><div class="card-title">cleaning.py</div><div class="card-body">SPC missing-value classification — no silent imputation.</div></div>
+      <div class="card"><div class="card-title">ingest.py</div><div class="card-body">Column auto-detection and frame validation (column-dict input).</div></div>
+      <div class="card"><div class="card-title">models.py</div><div class="card-body">Pydantic contracts: ChartType, ControlLimits, SPCRecord, Gate, …</div></div>
+      <div class="card"><div class="card-title">constants.py</div><div class="card-body">Shewhart factors as functions of subgroup size n.</div></div>
+      <div class="card"><div class="card-title">report.py</div><div class="card-body">Pure report models (SPC / MSA / Capability) — no HTML/I/O.</div></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ S2: GATED PIPELINE ═══════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">02</div>
+      <div>
+        <div class="section-title">The Gated Phase I Pipeline</div>
+        <div class="section-desc">establish() — real gate order, freeze contract, go-live checklist</div>
+      </div>
+    </div>
+
+    <div class="prose">
+      Phase I is not “run a chart.” It is a <strong>decisional pipeline</strong> that validates the measurement system,
+      classifies missing data, checks independence and distribution, selects a chart/ruleset, then either
+      <span class="hl-green">freezes</span> versioned control limits or <span class="hl-orange">blocks</span> freeze when a STOP gate fires.
+      Phase II only evaluates against limits that survived this contract.
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-label"><span>FIG 2.1</span> establish() — ACTUAL GATE ORDER</div>
+      <div class="mermaid">
+flowchart TD
+    A([Raw Phase I sample]) --> B[msa gate<br/>%GRR / NDC]
+    B --> C{gage_resolution<br/>provided?}
+    C -->|yes| D[gage_resolution gate<br/>10:1 rule]
+    C -->|no| E[missing gate<br/>classify_missing]
+    D --> E
+    E --> F[autocorrelation gate<br/>ACF lag-1]
+    F --> G{Autocorrelated?}
+    G -->|YES| H[Route EWMA or CUSUM<br/>skip normality + multimodal]
+    G -->|NO| I[multimodal gate<br/>Hartigan dip]
+    I --> J{Multimodal?}
+    J -->|STOP| K[stop — stratify]
+    J -->|ok| L[normality gate<br/>transform or Wheeler]
+    H --> M[chart gate<br/>analyze_control_chart]
+    L --> M
+    K --> M
+    M --> N{Any STOP?}
+    N -->|YES| O[freeze: blocked<br/>frozen = false]
+    N -->|NO| P[freeze: ok<br/>frozen = true<br/>version hash]
+    O --> Q([PipelineResult<br/>diagnostic only])
+    P --> R([PipelineResult<br/>limits ready for Phase II])
+
+    style A fill:#1a0808,stroke:#FF6B35,color:#FF9060
+    style K fill:#1a0808,stroke:#FF4EA3,color:#FF9AAD
+    style O fill:#1a0808,stroke:#FF6B35,color:#FF6B35
+    style P fill:#081a0d,stroke:#39FF6E,color:#39FF6E
+    style R fill:#081a0d,stroke:#39FF6E,color:#8FD9A8
+    style H fill:#0d0818,stroke:#B57AFF,color:#C9A8FF
+      </div>
+    </div>
+
+    <div class="subhead">GATE STEPS</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>STEP</th><th>WHEN EMITTED</th><th>STATUSES</th><th>NOTES</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>msa</code></td>
+            <td>Always</td>
+            <td><span class="tag green">ok</span> <span class="tag yellow">warn</span> <span class="tag orange">stop</span></td>
+            <td>%GRR &lt;10 ok; 10–30 warn; &gt;30 stop. Warn if MSA inputs omitted.</td>
+          </tr>
+          <tr>
+            <td><code>gage_resolution</code></td>
+            <td>Only if resolution + tolerance provided</td>
+            <td><span class="tag green">ok</span> <span class="tag orange">stop</span></td>
+            <td>10:1 resolution gate.</td>
+          </tr>
+          <tr>
+            <td><code>missing</code></td>
+            <td>Always</td>
+            <td><span class="tag green">ok</span> <span class="tag yellow">warn</span></td>
+            <td>SPC classify — never silent drop/impute.</td>
+          </tr>
+          <tr>
+            <td><code>autocorrelation</code></td>
+            <td>Always</td>
+            <td><span class="tag green">ok</span> <span class="tag yellow">warn</span></td>
+            <td>Warn + route EWMA/CUSUM when ACF &gt; threshold (default 0.2).</td>
+          </tr>
+          <tr>
+            <td><code>multimodal</code></td>
+            <td>Shewhart path only</td>
+            <td><span class="tag green">ok</span> <span class="tag orange">stop</span></td>
+            <td>Skipped on EWMA/CUSUM route. STOP → stratify.</td>
+          </tr>
+          <tr>
+            <td><code>normality</code></td>
+            <td>Shewhart path only</td>
+            <td><span class="tag green">ok</span> <span class="tag yellow">warn</span></td>
+            <td>Transform if possible; else Wheeler ruleset. Skipped on EWMA/CUSUM.</td>
+          </tr>
+          <tr>
+            <td><code>chart</code></td>
+            <td>Always</td>
+            <td><span class="tag green">ok</span></td>
+            <td>Runs <code>analyze_control_chart</code> with selected type/ruleset.</td>
+          </tr>
+          <tr>
+            <td><code>freeze</code></td>
+            <td>Always</td>
+            <td><span class="tag green">ok</span> <span class="tag pink">blocked</span></td>
+            <td><code>frozen = not stopped</code>. Blocked lists stop_steps in detail.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout warn">
+      <div class="icon">⚠</div>
+      <div class="body"><strong>Enforcement chain.</strong> A STOP gate sets <code>PipelineResult.frozen = False</code>. The API skips <code>save_limits</code> for unfrozen runs. <code>POST /streams/{key}/go-live</code> rejects registration when stored meta has <code>frozen: false</code>, <code>stopped: true</code>, or <code>checklist_passed: false</code>. Diagnostic charts may still render — they must not go live.</div>
+    </div>
+
+    <div class="subhead">phase1_checklist() — GO-LIVE ITEMS</div>
+    <div class="prose">
+      <ul class="checklist">
+        <li><div class="box"></div><code>msa_grr_ndc</code> — MSA %GRR and NDC acceptable</li>
+        <li><div class="box"></div><code>normality_path</code> — distribution path chosen and recorded</li>
+        <li><div class="box"></div><code>autocorrelation</code> — ACF checked; EWMA/CUSUM if needed</li>
+        <li><div class="box"></div><code>outliers_investigated</code> — caller-supplied (default true)</li>
+        <li><div class="box"></div><code>missing_classified</code> — every gap flagged; no silent imputation</li>
+        <li><div class="box"></div><code>min_subgroups</code> — default ≥ 25 subgroups / points</li>
+        <li><div class="box"></div><code>limits_frozen</code> — freeze gate ok; version hash present</li>
+        <li><div class="box"></div><code>transform_documented</code> — transform method recorded when used</li>
+        <li><div class="box"></div><code>gage_calibration</code> — caller-supplied (default true)</li>
+        <li><div class="box"></div><code>phase2_enabled</code> — caller-supplied (default false until go-live)</li>
+        <li><div class="box"></div><code>stratification</code> — <em>conditional</em>: only when multimodal gate is STOP</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ S3: CHARTS & RULES ═══════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">03</div>
+      <div>
+        <div class="section-title">Chart Selection &amp; Run Rules</div>
+        <div class="section-desc">Nine ChartType members, three rulesets, normality → transform → Wheeler branch</div>
+      </div>
+    </div>
+
+    <div class="subhead">CHART TYPES</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>ChartType</th><th>VALUE</th><th>DATA SHAPE</th><th>LIMITS</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="tag cyan">I_MR</span></td><td><code>I-MR</code></td><td>Individuals (no subgroup)</td><td>Fixed UCL/CL/LCL + MR secondary</td></tr>
+          <tr><td><span class="tag cyan">XBAR_R</span></td><td><code>Xbar-R</code></td><td>Subgroups, n ≤ ~10</td><td>Fixed or variable-n; R secondary</td></tr>
+          <tr><td><span class="tag cyan">XBAR_S</span></td><td><code>Xbar-S</code></td><td>Subgroups, larger n</td><td>Fixed or variable-n; S secondary</td></tr>
+          <tr><td><span class="tag purple">P</span></td><td><code>P</code></td><td>Defectives / sample size</td><td>Variable limits; rejects n ≤ 0</td></tr>
+          <tr><td><span class="tag purple">NP</span></td><td><code>NP</code></td><td>Defectives, constant n</td><td>Fixed limits</td></tr>
+          <tr><td><span class="tag purple">C</span></td><td><code>C</code></td><td>Defect counts, equal area</td><td>Fixed limits</td></tr>
+          <tr><td><span class="tag purple">U</span></td><td><code>U</code></td><td>Defects / opportunities</td><td>Variable limits; rejects o ≤ 0</td></tr>
+          <tr><td><span class="tag yellow">EWMA</span></td><td><code>EWMA</code></td><td>Individuals, ACF route</td><td>Time-varying limits; stateful z</td></tr>
+          <tr><td><span class="tag yellow">CUSUM</span></td><td><code>CUSUM</code></td><td>Individuals, ACF route</td><td>C+/C− tabular; k, h params</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subhead">RULESETS</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>RULESET</th><th>RULE IDs</th><th>WHEN SELECTED</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tag green">nelson</span></td>
+            <td>1–8 (beyond 3σ, runs, trends, zones, mixture…)</td>
+            <td>Default for normal / successfully transformed Shewhart charts</td>
+          </tr>
+          <tr>
+            <td><span class="tag cyan">western_electric</span></td>
+            <td>WE1–WE4</td>
+            <td>Explicit config; classic Western Electric zone rules</td>
+          </tr>
+          <tr>
+            <td><span class="tag orange">wheeler</span></td>
+            <td>Rule 1 only — points beyond 3σ</td>
+            <td>Auto when non-normal and transform fails; skips zone/run tests</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-label"><span>FIG 3.1</span> NORMALITY → TRANSFORM → WHEELER BRANCH</div>
+      <div class="mermaid">
+flowchart TD
+    A([Shewhart path — ACF ok]) --> B[check_normality]
+    B --> C{is_normal?}
+    C -->|YES| D[ruleset = nelson<br/>dist = NORMAL]
+    C -->|NO| E[apply_transform method=auto<br/>Box-Cox / log / Yeo-Johnson]
+    E --> F{became_normal?}
+    F -->|YES| G[use transformed values<br/>ruleset = nelson<br/>dist = TRANSFORMED]
+    F -->|NO| H[Wheeler robust path<br/>ruleset = wheeler<br/>dist = NON_NORMAL_RAW]
+    H --> I{subgroup_ids present?}
+    I -->|YES| J[Keep Xbar-R / Xbar-S<br/>only switch ruleset]
+    I -->|NO| K[I-MR with Wheeler rules]
+
+    style D fill:#081a0d,stroke:#39FF6E,color:#8FD9A8
+    style G fill:#081a0d,stroke:#39FF6E,color:#8FD9A8
+    style H fill:#0d0818,stroke:#B57AFF,color:#C9A8FF
+    style J fill:#081218,stroke:#00D4FF,color:#7ADCF7
+      </div>
+    </div>
+
+    <div class="callout good">
+      <div class="icon">✓</div>
+      <div class="body"><strong>Hardening Phase 1.</strong> The Wheeler path no longer flattens subgrouped data into I-MR. When <code>subgroup_ids</code> are present, the chart type is preserved and only the ruleset switches to <code>wheeler</code>. The old <code>force_wheeler or True</code> unconditional branch is gone.</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ S4: MSA ═══════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">04</div>
+      <div>
+        <div class="section-title">Measurement System Analysis</div>
+        <div class="section-desc">Static studies, continuous MSA, and pipeline gate thresholds</div>
+      </div>
+    </div>
+
+    <div class="prose">
+      MSA runs <strong>before</strong> process charts in Phase I. A measurement system that consumes most of the tolerance
+      will manufacture false OOC signals no matter how good the chart math is.
+    </div>
+
+    <div class="subhead">STATIC STUDIES — spc_core/msa.py</div>
+    <div class="cards">
+      <div class="card"><div class="card-title">gage_rr_anova</div><div class="card-body">Crossed ANOVA Gage R&amp;R. Unbalanced designs fall back to range method automatically.</div></div>
+      <div class="card"><div class="card-title">gage_rr_range</div><div class="card-body">Range method Gage R&amp;R — used directly or as ANOVA fallback.</div></div>
+      <div class="card"><div class="card-title">bias_study</div><div class="card-body">Bias vs reference standard with significance test.</div></div>
+      <div class="card"><div class="card-title">linearity_study</div><div class="card-body">Bias across the measurement range.</div></div>
+      <div class="card"><div class="card-title">stability_study</div><div class="card-body">Measurement stability over time (control-chart style).</div></div>
+      <div class="card"><div class="card-title">ndc_gate / gage_resolution_gate</div><div class="card-body">NDC ≥ 5 and 10:1 resolution vs tolerance STOP/OK gates.</div></div>
+    </div>
+
+    <div class="subhead">%GRR THRESHOLDS IN THE PIPELINE</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>%GRR OF TOLERANCE</th><th>GATE STATUS</th><th>ACTION</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>&lt; 10%</td><td><span class="tag green">ok</span></td><td>Measurement system acceptable — proceed</td></tr>
+          <tr><td>10% – 30%</td><td><span class="tag yellow">warn</span></td><td>Conditional — document risk, consult QE</td></tr>
+          <tr><td>&gt; 30%</td><td><span class="tag orange">stop</span></td><td>Fix the gage before freezing limits</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subhead">CONTINUOUS MSA — spc_core/msa_stream.py</div>
+    <div class="prose">
+      <code>ContinuousMSA</code> supports reference-standard injection on a live stream, tracks EWMA bias drift,
+      and emits <code>CalibrationAlert</code> events. The library API is complete; it is <strong>not yet wired into
+      <code>StreamEngine</code></strong> as an automatic Phase II sidecar (see §11).
+    </div>
+  </section>
+
+  <!-- ═══════════════════ S5: CAPABILITY ═══════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">05</div>
+      <div>
+        <div class="section-title">Capability &amp; Six Sigma</div>
+        <div class="section-desc">Parametric, transformed, and nonparametric capability with DPMO ↔ sigma</div>
+      </div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-label"><span>FIG 5.1</span> CAPABILITY ROUTING</div>
+      <div class="mermaid">
+flowchart TD
+    A([Measurements + USL/LSL]) --> B[check_normality]
+    B --> C{Normal?}
+    C -->|YES| D[parametric_capability<br/>Cp Cpk Pp Ppk Cpm]
+    C -->|NO| E[apply_transform]
+    E --> F{Became normal?}
+    F -->|YES| G[parametric on transformed<br/>back-transform interpretation]
+    F -->|NO| H[nonparametric_capability<br/>percentile / Cnpk path]
+    D --> I[dpmo_to_sigma]
+    G --> I
+    H --> I
+    I --> J([CapabilityResult<br/>+ sigma level])
+
+    style D fill:#081a0d,stroke:#39FF6E,color:#8FD9A8
+    style G fill:#081218,stroke:#00D4FF,color:#7ADCF7
+    style H fill:#0d0818,stroke:#B57AFF,color:#C9A8FF
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>INDEX</th><th>USES</th><th>NOTES</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>Cp / Cpk</code></td><td>Within-subgroup σ</td><td>Short-term capability; Cpk = min(CPU, CPL)</td></tr>
+          <tr><td><code>Pp / Ppk</code></td><td>Overall σ</td><td>Long-term performance</td></tr>
+          <tr><td><code>Cpm</code></td><td>Target-centered</td><td>Taguchi-style when target ≠ midpoint</td></tr>
+          <tr><td><code>Cnpk</code></td><td>Percentile-based</td><td>Nonparametric path for stubborn non-normal data</td></tr>
+          <tr><td><code>DPMO → σ</code></td><td><code>dpmo_to_sigma</code> / <code>sigma_to_dpmo</code></td><td>Six Sigma conversion helpers</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ S6: DATA QUALITY ═══════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">06</div>
+      <div>
+        <div class="section-title">Data Quality &amp; the SPC Record</div>
+        <div class="section-desc">SPC-specific cleaning rules and the per-point output schema</div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="icon">ℹ</div>
+      <div class="body"><strong>SPC cleaning ≠ ML cleaning.</strong> No mean imputation. No silent drops. Every gap gets a <code>QualityFlag</code>. LOCF is capped at 3 consecutive points. Control-chart points that were imputed are still flagged so Phase II can treat them cautiously.</div>
+    </div>
+
+    <div class="subhead">QUALITY &amp; DISTRIBUTION FLAGS</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>ENUM</th><th>MEMBERS</th><th>PURPOSE</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>QualityFlag</code></td>
+            <td>ORIGINAL · IMPUTED_LOCF · EXCLUDED · MISSING · OUT_OF_RANGE · …</td>
+            <td>Per-point data-quality classification from <code>classify_missing()</code> / range checks</td>
+          </tr>
+          <tr>
+            <td><code>DistributionFlag</code></td>
+            <td>NORMAL · TRANSFORMED · NON_NORMAL_RAW</td>
+            <td>Which distribution path the pipeline took</td>
+          </tr>
+          <tr>
+            <td><code>Phase</code></td>
+            <td>PHASE_I · PHASE_II</td>
+            <td>Whether limits were being established or applied</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subhead">SPCRecord — PER-POINT OUTPUT SCHEMA</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>FIELD</th><th>TYPE</th><th>REQUIRED</th><th>PURPOSE</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>timestamp</code></td><td>datetime UTC</td><td><span class="tag yellow">IF PROVIDED</span></td><td>Time order; passed through from ingest when present</td></tr>
+          <tr><td><code>subgroup_id</code></td><td>int / null</td><td><span class="tag cyan">IF SUBGROUPED</span></td><td>Rational subgroup linkage</td></tr>
+          <tr><td><code>value</code></td><td>float</td><td><span class="tag green">ALWAYS</span></td><td>Original or transformed measurement</td></tr>
+          <tr><td><code>quality_flag</code></td><td>QualityFlag</td><td><span class="tag green">ALWAYS</span></td><td>ORIGINAL / IMPUTED_LOCF / EXCLUDED / …</td></tr>
+          <tr><td><code>distribution_flag</code></td><td>DistributionFlag</td><td><span class="tag green">ALWAYS</span></td><td>NORMAL / TRANSFORMED / NON_NORMAL_RAW</td></tr>
+          <tr><td><code>transform_applied</code></td><td>string / null</td><td><span class="tag cyan">IF TRANSFORMED</span></td><td>e.g. BOXCOX(λ=…), LOG</td></tr>
+          <tr><td><code>phase</code></td><td>Phase</td><td><span class="tag green">ALWAYS</span></td><td>PHASE_I or PHASE_II</td></tr>
+          <tr><td><code>ucl / lcl / center</code></td><td>float</td><td><span class="tag cyan">PHASE II</span></td><td>From frozen ControlLimits — must not drift</td></tr>
+          <tr><td><code>gage_id</code></td><td>string / null</td><td><span class="tag yellow">OPTIONAL</span></td><td>MSA / calibration linkage</td></tr>
+          <tr><td><code>machine_id</code></td><td>string / null</td><td><span class="tag yellow">OPTIONAL</span></td><td>Stratification and traceability</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ S7: REAL-TIME ═══════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">07</div>
+      <div>
+        <div class="section-title">Real-Time Architecture</div>
+        <div class="section-desc">MQTT → Kafka → StreamEngine → Timescale + Redis → WebSocket → dashboard</div>
+      </div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-label"><span>FIG 7.1</span> LIVE DATA PATH</div>
+      <div class="mermaid">
+flowchart LR
+    S[Sensors / PLCs] --> M[Mosquitto MQTT<br/>sensors/#]
+    M --> B[mqtt-bridge]
+    B --> K[Redpanda / Kafka<br/>spc.measurements]
+    K --> E[stream-engine<br/>StreamEngine]
+    E --> T[(TimescaleDB<br/>raw + ooc)]
+    E --> R[(Redis<br/>spc:live:key)]
+    R --> A[FastAPI<br/>/ws/live/key]
+    A --> UI[Next.js /live]
+
+    style E fill:#081218,stroke:#00D4FF,color:#00D4FF
+    style T fill:#0d0818,stroke:#B57AFF,color:#C9A8FF
+    style UI fill:#081a0d,stroke:#39FF6E,color:#8FD9A8
+      </div>
+    </div>
+
+    <div class="prose">
+      <strong>Contract:</strong> StreamEngine only evaluates against <span class="hl-green">frozen</span> Phase I limits
+      registered via <code>/streams/register</code> + <code>/streams/{key}/go-live</code>.
+      Each observation is written to Tier-1 <code>raw_measurements</code>, evaluated by a keyed
+      <code>Phase2Evaluator</code> (Shewhart fixed, variable-n, EWMA, or CUSUM), and any OOC signal
+      is persisted to <code>ooc_events</code> and published on Redis for the live dashboard.
+    </div>
+
+    <div class="subhead">DURABILITY &amp; RELIABILITY (HARDENING PHASE 3)</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>MECHANISM</th><th>BEHAVIOR</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Evaluator state restore</td><td>On re-register, seed index + rule buffer / EWMA z / CUSUM C± from recent raw measurements</td></tr>
+          <tr><td>LRU stream eviction</td><td>Bounded in-memory evaluator map; inactive streams dropped under pressure</td></tr>
+          <tr><td>Deterministic raw IDs</td><td>Hash(stream_key, ts, value) + ON CONFLICT DO NOTHING — Kafka replay is idempotent</td></tr>
+          <tr><td>Manual Kafka commits</td><td><code>enable_auto_commit=False</code>; commit after successful handle; poison messages committed past</td></tr>
+          <tr><td>Kafka / MQTT reconnect</td><td>Exponential backoff on disconnect for both sources</td></tr>
+          <tr><td>SQLite rejection</td><td><code>require_streaming_repository()</code> raises if repo lacks <code>save_raw_measurement</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ S8: STORAGE ═══════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num">08</div>
+      <div>
+        <div class="section-title">Storage Architecture</div>
+        <div class="section-desc">SQLite for batch; TimescaleDB for streaming; seven schema tables</div>
+      </div>
+    </div>
+
+    <div class="callout note">
+      <div class="icon">✎</div>
+      <div class="body"><strong>Backend selection.</strong> <code>adapters/factory.py</code> picks SQLite (default) or TimescaleDB from config. Streaming services call <code>require_streaming_repository()</code>, which hard-rejects SQLite because it has no Tier-1 raw hypertable path.</div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>TABLE</th><th>TIER</th><th>KEY COLUMNS</th><th>PURPOSE</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>raw_measurements</code></td>
+            <td><span class="tag cyan">Tier-1</span></td>
+            <td>id, ts, stream_key, value, quality_flag, machine_id, gage_id, limits_version</td>
+            <td>Hypertable; ~90-day retention; idempotent inserts</td>
+          </tr>
+          <tr>
+            <td><code>ooc_events</code></td>
+            <td><span class="tag purple">Tier-2</span></td>
+            <td>stream_key, limits_version, index, value, rule_id, ts, acked…</td>
+            <td>Unique (stream_key, ts, rule_id); ack workflow</td>
+          </tr>
+          <tr>
+            <td><code>analysis_runs</code></td>
+            <td><span class="tag purple">Tier-2</span></td>
+            <td>run_id, analysis_type, limits_version, report JSON</td>
+            <td>Batch Phase I / capability / MSA run archive</td>
+          </tr>
+          <tr>
+            <td><code>capability_history</code></td>
+            <td><span class="tag purple">Tier-2</span></td>
+            <td>run_id, cpk, ppk, sigma_level</td>
+            <td>Capability trend over runs</td>
+          </tr>
+          <tr>
+            <td><code>control_limits</code></td>
+            <td><span class="tag green">Control plane</span></td>
+            <td>version (PK), chart_type, payload, meta</td>
+            <td>Frozen limits + version content hash</td>
+          </tr>
+          <tr>
+            <td><code>stream_registry</code></td>
+            <td><span class="tag green">Control plane</span></td>
+            <td>stream_key, topic, limits_version, chart_type, ruleset, active</td>
+            <td>Which streams are live and which limits they use</td>
+          </tr>
+          <tr>
+            <td><code>audit_log</code></td>
+            <td><span class="tag green">Control plane</span></td>
+            <td>event_id, event, detail, user_id</td>
+            <td>Security and operational audit trail</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      Cold export: <code>adapters/archive.py</code> can dump raw measurements to Parquet/CSV.
+      There is <strong>no automated hot→cold archival job</strong> yet — retention is Timescale policy only.
+      Schema changes ship via Alembic; compose runs a <code>migrate</code> service before API and stream-engine start
+      (<code>ASPC_TSDB_INIT=0</code> disables runtime <code>create_all</code>).
+    </div>
+  </section>
+
+  <!-- ═══════════════════ S9: INTERFACES ═══════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num">09</div>
+      <div>
+        <div class="section-title">Interfaces</div>
+        <div class="section-desc">HTTP API, CLI, Python library entry points, and configuration</div>
+      </div>
+    </div>
+
+    <div class="subhead">HTTP API — apps/api/main.py</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>METHOD</th><th>PATH</th><th>AUTH</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>GET</td><td><code>/</code></td><td><span class="tag yellow">none</span></td></tr>
+          <tr><td>GET</td><td><code>/health</code></td><td><span class="tag yellow">none</span> — probes persistence + Redis</td></tr>
+          <tr><td>GET</td><td><code>/metrics</code></td><td><span class="tag yellow">none</span></td></tr>
+          <tr><td>POST</td><td><code>/auth/token</code></td><td><span class="tag yellow">none</span> — rate limit 10/min</td></tr>
+          <tr><td>POST</td><td><code>/analyze/control-chart</code></td><td><span class="tag cyan">JWT</span></td></tr>
+          <tr><td>POST</td><td><code>/analyze/capability</code></td><td><span class="tag cyan">JWT</span></td></tr>
+          <tr><td>POST</td><td><code>/analyze/msa</code></td><td><span class="tag cyan">JWT</span></td></tr>
+          <tr><td>GET</td><td><code>/runs</code> · <code>/runs/{run_id}</code></td><td><span class="tag cyan">JWT</span></td></tr>
+          <tr><td>GET</td><td><code>/reports/{run_id}</code></td><td><span class="tag cyan">JWT</span> + path sanitize</td></tr>
+          <tr><td>POST</td><td><code>/streams/register</code></td><td><span class="tag purple">JWT + X-API-Key</span></td></tr>
+          <tr><td>POST</td><td><code>/streams/{key}/go-live</code></td><td><span class="tag purple">JWT + X-API-Key</span></td></tr>
+          <tr><td>GET</td><td><code>/streams</code></td><td><span class="tag cyan">JWT</span></td></tr>
+          <tr><td>POST</td><td><code>/alerts/{event_id}/ack</code></td><td><span class="tag purple">JWT + X-API-Key</span></td></tr>
+          <tr><td>WS</td><td><code>/ws/live/{stream_key}</code></td><td><span class="tag cyan">JWT ?token=</span></td></tr>
+          <tr><td>GET</td><td><code>/stream/replay</code></td><td><span class="tag cyan">JWT</span> + upload-dir containment</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subhead">CLI — aspc</div>
+    <div class="cards">
+      <div class="card"><div class="card-title">aspc control-chart</div><div class="card-body">Phase I via <code>establish()</code>; persist run + limits when frozen.</div></div>
+      <div class="card"><div class="card-title">aspc capability</div><div class="card-body">Process capability analysis with USL/LSL.</div></div>
+      <div class="card"><div class="card-title">aspc msa</div><div class="card-body">gage_rr / bias / linearity / stability studies.</div></div>
+      <div class="card"><div class="card-title">aspc serve</div><div class="card-body">Start FastAPI via uvicorn.</div></div>
+    </div>
+
+    <div class="subhead">PYTHON — key entry points</div>
+    <div class="prose">
+      <code>establish()</code> · <code>phase1_checklist()</code> · <code>analyze_control_chart()</code> ·
+      <code>Phase2Evaluator</code> · <code>capability_analysis()</code> ·
+      <code>gage_rr_anova()</code> / <code>gage_rr_range()</code> ·
+      <code>ewma_chart()</code> / <code>cusum_chart()</code> ·
+      <code>classify_missing()</code> · <code>ingest()</code>
+    </div>
+
+    <div class="subhead">CONFIGURATION — ASPC_* OVERRIDES</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>ENV VAR</th><th>TARGET</th><th>DEFAULT / NOTES</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ASPC_PERSISTENCE_BACKEND</code></td><td>persistence.backend</td><td><code>sqlite</code> or <code>timescale</code></td></tr>
+          <tr><td><code>ASPC_SQLITE_PATH</code></td><td>persistence.sqlite_path</td><td><code>aspc.db</code></td></tr>
+          <tr><td><code>ASPC_TIMESCALE_DSN</code> / <code>DATABASE_URL</code></td><td>persistence.timescale_dsn</td><td>required for streaming</td></tr>
+          <tr><td><code>ASPC_JWT_SECRET</code></td><td>auth.jwt_secret</td><td>refused if default in production</td></tr>
+          <tr><td><code>ASPC_ADMIN_USERNAME</code> / <code>PASSWORD</code></td><td>auth.admin_*</td><td>bcrypt-hashed at runtime</td></tr>
+          <tr><td><code>ASPC_API_KEYS</code></td><td>auth.api_keys</td><td>comma-separated; fail-closed if empty</td></tr>
+          <tr><td><code>ASPC_AUTH_ENABLED</code></td><td>auth.enabled</td><td>default true</td></tr>
+          <tr><td><code>ASPC_DEV_INSECURE</code></td><td>auth.dev_insecure</td><td>local escape hatch only</td></tr>
+          <tr><td><code>ASPC_CORS_ORIGINS</code></td><td>api.cors_origins</td><td>default localhost:3000 only</td></tr>
+          <tr><td><code>ASPC_REDIS_URL</code></td><td>redis.url</td><td><code>redis://localhost:6379/0</code></td></tr>
+          <tr><td><code>ASPC_KAFKA_BOOTSTRAP</code> / <code>TOPIC</code></td><td>kafka.*</td><td>stream-engine + bridge</td></tr>
+          <tr><td><code>ASPC_TSDB_INIT</code></td><td>(runtime)</td><td><code>0</code> in compose — Alembic owns schema</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ S10: SECURITY / OPS / QA ═══════════════════ -->
+  <section class="section" id="s10">
+    <div class="section-header">
+      <div class="section-num">10</div>
+      <div>
+        <div class="section-title">Security, Operations &amp; Quality Gates</div>
+        <div class="section-desc">Auth controls, compose stack, CI enforcement, test inventory</div>
+      </div>
+    </div>
+
+    <div class="subhead">SECURITY CONTROLS</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>CONTROL</th><th>STATUS</th><th>DETAIL</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>bcrypt admin login</td><td><span class="tag green">yes</span></td><td>Direct bcrypt; username must match admin</td></tr>
+          <tr><td>JWT Bearer</td><td><span class="tag green">yes</span></td><td>HS256; expire minutes configurable</td></tr>
+          <tr><td>Default JWT secret refusal</td><td><span class="tag green">yes</span></td><td>Startup check unless <code>ASPC_DEV_INSECURE=1</code></td></tr>
+          <tr><td>Fail-closed API keys</td><td><span class="tag green">yes</span></td><td>Empty key list → 401 (unless dev_insecure)</td></tr>
+          <tr><td>WebSocket JWT</td><td><span class="tag green">yes</span></td><td><code>?token=</code> validated; close 1008 on fail</td></tr>
+          <tr><td>Path containment</td><td><span class="tag green">yes</span></td><td><code>_safe_run_id</code> + <code>resolve_under</code> for reports/replay</td></tr>
+          <tr><td>Streamed uploads</td><td><span class="tag green">yes</span></td><td>Chunked write + incremental max-bytes check</td></tr>
+          <tr><td>Login rate limit</td><td><span class="tag yellow">partial</span></td><td>slowapi 10/min on <code>/auth/token</code> only</td></tr>
+          <tr><td>CORS defaults</td><td><span class="tag green">yes</span></td><td>localhost:3000 / 127.0.0.1:3000 — not <code>*</code></td></tr>
+          <tr><td>Go-live gate enforcement</td><td><span class="tag green">yes</span></td><td>Rejects unfrozen / failed checklist</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subhead">DOCKER COMPOSE SERVICES</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>SERVICE</th><th>HOST PORTS</th><th>ROLE</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>redpanda</td><td>19092, 9644</td><td>Kafka-compatible broker</td></tr>
+          <tr><td>mosquitto</td><td>1883</td><td>MQTT broker</td></tr>
+          <tr><td>timescaledb</td><td>5433 → 5432</td><td>Primary streaming DB</td></tr>
+          <tr><td>redis</td><td>6379</td><td>Live OOC pub/sub</td></tr>
+          <tr><td>migrate</td><td>—</td><td>Alembic upgrade head (one-shot)</td></tr>
+          <tr><td>api</td><td>8000</td><td>FastAPI</td></tr>
+          <tr><td>stream-engine</td><td>—</td><td>Phase II Kafka consumer</td></tr>
+          <tr><td>mqtt-bridge</td><td>—</td><td>MQTT → Kafka forwarder</td></tr>
+          <tr><td>frontend</td><td>3000</td><td>Next.js operator UI</td></tr>
+          <tr><td>grafana</td><td>3001</td><td>Ops profile only</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subhead">CI JOBS — .github/workflows/ci.yml</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>JOB</th><th>GATES</th><th>ENFORCED</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>python</code></td><td>ruff · mypy spc_core · pytest (not integration) · acceptance · Py 3.11+3.12</td><td><span class="tag green">blocking</span></td></tr>
+          <tr><td><code>integration</code></td><td>TimescaleDB + Redis services · <code>ASPC_INTEGRATION=1</code></td><td><span class="tag green">blocking</span></td></tr>
+          <tr><td><code>frontend</code></td><td>lint · test · build</td><td><span class="tag green">blocking</span></td></tr>
+          <tr><td><code>docker</code></td><td>Build API + frontend images</td><td><span class="tag green">blocking</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <strong>Tests:</strong> 106 pytest functions across 20 files (unit + integration), plus frontend Vitest and a Playwright e2e smoke.
+      <strong>Sample data:</strong> 16 datasets in <code>DATASET_CATALOG</code> covering in/out-of-control individuals, subgroups,
+      attribute charts, Gage R&amp;R excellent/poor, bias/linearity/stability, and capability scenarios.
+      Sample data is excluded from the published wheel.
+    </div>
+  </section>
+
+  <!-- ═══════════════════ S11: GAPS ═══════════════════ -->
+  <section class="section" id="s11">
+    <div class="section-header">
+      <div class="section-num">11</div>
+      <div>
+        <div class="section-title">Spec Coverage &amp; Known Gaps</div>
+        <div class="section-desc">Honest scoring of the original MVP document against what shipped</div>
+      </div>
+    </div>
+
+    <div class="callout note">
+      <div class="icon">✎</div>
+      <div class="body">The original MVP HTML (<code>refactoring elements/spc_mvp_doc.html</code>) was a design target. This section maps each of its eight sections to the as-built product — no marketing gloss.</div>
+    </div>
+
+    <div class="subhead">MVP SECTION VERDICTS</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>MVP SECTION</th><th>VERDICT</th><th>EVIDENCE / GAP</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>01 Master Pipeline Overview</td>
+            <td><span class="tag yellow">partial</span></td>
+            <td><code>establish()</code> implements the decisional flow; step order differs slightly (missing before ACF); no dedicated outlier-classification step</td>
+          </tr>
+          <tr>
+            <td>02 Normality &amp; Distribution Tree</td>
+            <td><span class="tag yellow">partial</span></td>
+            <td>ACF → EWMA/CUSUM, transform, Wheeler, multimodal STOP all real; no ARIMA-residuals route; no visual QQ pipeline</td>
+          </tr>
+          <tr>
+            <td>03 Ingestion Mode Architecture</td>
+            <td><span class="tag yellow">partial</span></td>
+            <td>CSV/Parquet batch + Kafka/MQTT streaming work; no NATS / OPC-UA / Modbus adapters; no QuestDB</td>
+          </tr>
+          <tr>
+            <td>04 Pandas vs Polars Decision</td>
+            <td><span class="tag pink">not implemented</span></td>
+            <td>Core is deliberately dataframe-free (NumPy + column dicts). Polars is optional Parquet I/O only — by design, not a miss</td>
+          </tr>
+          <tr>
+            <td>05 MSA &amp; Gage R&amp;R Flow</td>
+            <td><span class="tag yellow">partial</span></td>
+            <td>Static studies + pipeline gates complete; ContinuousMSA library exists but is not wired into StreamEngine</td>
+          </tr>
+          <tr>
+            <td>06 Missing Value Classification</td>
+            <td><span class="tag yellow">partial</span></td>
+            <td><code>classify_missing()</code> + QualityFlag real; no incomplete-subgroup reduced-n, no maintenance-restart tree, no KNN-for-Cpk-only path</td>
+          </tr>
+          <tr>
+            <td>07 Storage Architecture</td>
+            <td><span class="tag yellow">partial</span></td>
+            <td>SQLite + Timescale two-tier real; no QuestDB; no automated hot→cold archival job</td>
+          </tr>
+          <tr>
+            <td>08 SPC-Ready Output Schema</td>
+            <td><span class="tag green">implemented</span></td>
+            <td><code>SPCRecord</code>, <code>to_records()</code>, versioned <code>ControlLimits</code>, 10-item checklist — core complete</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subhead">KNOWN GAPS (AS-BUILT)</div>
+    <div class="cards">
+      <div class="card"><div class="card-title">No dataframe routing layer</div><div class="card-body">Intentional: <code>spc_core</code> stays NumPy-pure. Polars is adapter-only for Parquet.</div></div>
+      <div class="card"><div class="card-title">No ARIMA residual route</div><div class="card-body">Autocorrelated data routes to EWMA/CUSUM only — not ARIMA-then-Shewhart-on-residuals.</div></div>
+      <div class="card"><div class="card-title">No OPC-UA / Modbus / NATS</div><div class="card-body">Live ingress is MQTT + Kafka. Industrial protocol adapters are future work.</div></div>
+      <div class="card"><div class="card-title">No QuestDB path</div><div class="card-body">TimescaleDB is the streaming store; QuestDB from the MVP spec was not adopted.</div></div>
+      <div class="card"><div class="card-title">Outlier classification placeholder</div><div class="card-body">Checklist item <code>outliers_investigated</code> is caller-supplied; no automated special-vs-common cause step.</div></div>
+      <div class="card"><div class="card-title">ContinuousMSA not in StreamEngine</div><div class="card-body">Library ready; live auto-injection of reference standards into the stream path is not hooked up.</div></div>
+      <div class="card"><div class="card-title">Rate limit = login only</div><div class="card-body">slowapi is wired; analyze/upload endpoints are not rate-limited yet.</div></div>
+      <div class="card"><div class="card-title">No automated cold archive job</div><div class="card-body"><code>archive.py</code> helper exists; retention is Timescale policy, not a scheduled Parquet dump.</div></div>
+      <div class="card"><div class="card-title">docs/development.md CI section</div><div class="card-body">Slightly stale vs Phase 4 — omits mypy and the integration job (code/CI are correct).</div></div>
+    </div>
+
+    <div class="callout good">
+      <div class="icon">✓</div>
+      <div class="body"><strong>Bottom line.</strong> ASPC v2.0.0 is a production Phase I/II SPC platform with real chart math, enforced freeze gates, Timescale-backed streaming durability, and hardened auth. The gaps above are known product boundaries — not hidden stubs behind the advertised ChartType surface.</div>
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- ═══════════════════ FOOTER ═══════════════════ -->
+  <footer class="footer">
+    <div>ASPC AS-BUILT SYSTEM DOCUMENT <span>v2.0.0</span></div>
+    <div>Standards: <span>AIAG MSA-4 · AIAG SPC · ISO 7870 · Six Sigma DMAIC</span></div>
+    <div>Stack: <span>Python · FastAPI · TimescaleDB · Kafka · Redis · Next.js</span></div>
+  </footer>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background:      '#0D1117',
+      mainBkg:         '#141C28',
+      nodeBorder:      '#1C2333',
+      clusterBkg:      '#0D1117',
+      titleColor:      '#C8D0DC',
+      edgeLabelBackground: '#0D1117',
+      nodeTextColor:   '#C8D0DC',
+      lineColor:       '#4A5568',
+      primaryColor:    '#141C28',
+      primaryTextColor:'#C8D0DC',
+      primaryBorderColor:'#1C2333',
+      secondaryColor:  '#0D1117',
+      tertiaryColor:   '#0A0C10',
+      fontSize:        '13px',
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 20,
+      nodeSpacing: 40,
+      rankSpacing: 50,
+    },
+  });
+</script>
+</body>
+</html>

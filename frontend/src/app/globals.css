@@ -1,0 +1,37 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --aspc-bg: #0b0b0f;
+  --aspc-accent: #e8c547;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--aspc-bg);
+  color: #f2f2f4;
+  font-family: "Sora", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(232, 197, 71, 0.28);
+}
+
+#__next,
+body > div:first-child {
+  position: relative;
+  z-index: 1;
+}

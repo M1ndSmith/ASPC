@@ -1,0 +1,72 @@
+{
+  "overall_percent": 85.6,
+  "axes": {
+    "chart_types": {
+      "target": 9,
+      "hit": 9,
+      "percent": 100.0,
+      "missing": []
+    },
+    "rulesets": {
+      "target": 3,
+      "hit": 3,
+      "percent": 100.0,
+      "missing": []
+    },
+    "quality_flags": {
+      "target": 7,
+      "hit": 0,
+      "percent": 0.0,
+      "missing": [
+        "EXCLUDED_INCOMPLETE",
+        "EXCLUDED_MAINTENANCE",
+        "IMPUTED_LOCF",
+        "MISSING_HUMAN",
+        "MISSING_SENSOR",
+        "ORIGINAL",
+        "RESTORED_FROM_BACKUP"
+      ]
+    },
+    "nelson_ids": {
+      "target": 8,
+      "hit": 8,
+      "percent": 100.0,
+      "missing": []
+    },
+    "we_ids": {
+      "target": 4,
+      "hit": 4,
+      "percent": 100.0,
+      "missing": []
+    },
+    "gate_steps": {
+      "target": 10,
+      "hit": 7,
+      "percent": 70.0,
+      "missing": [
+        "gage_resolution",
+        "transform",
+        "valid_range"
+      ]
+    },
+    "expect_classes": {
+      "target": 6,
+      "hit": 6,
+      "percent": 100.0,
+      "missing": []
+    },
+    "series_kinds": {
+      "target": 21,
+      "hit": 21,
+      "percent": 100.0,
+      "missing": []
+    },
+    "adversarial_kinds": {
+      "target": 6,
+      "hit": 6,
+      "percent": 100.0,
+      "missing": []
+    }
+  },
+  "n_cases": 56
+}

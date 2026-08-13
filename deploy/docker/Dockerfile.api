@@ -1,0 +1,32 @@
+# ASPC API service
+FROM python:3.12-slim AS base
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+COPY pyproject.toml README.md requirements.txt ./
+COPY spc_core ./spc_core
+COPY adapters ./adapters
+COPY apps ./apps
+COPY services ./services
+COPY sample_data ./sample_data
+COPY resilience_data ./resilience_data
+COPY migrations ./migrations
+COPY alembic.ini ./
+
+RUN uv pip install --system --no-cache -e ".[apps,data,render,tsdb,stream]"
+
+ENV PYTHONUNBUFFERED=1
+ENV ASPC_API_HOST=0.0.0.0
+ENV ASPC_API_PORT=8000
+ENV PYTHONPATH=/app
+
+EXPOSE 8000
+
+CMD ["aspc-api"]

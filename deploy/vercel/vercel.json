@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "installCommand": "pip install -e \".[apps]\" && pip uninstall -y uvloop watchfiles httptools openpyxl et-xmlfile redis prometheus-client"
+}

@@ -1,0 +1,50 @@
+# ASPC application configuration
+# Insecure placeholders below are refused at API startup unless ASPC_DEV_INSECURE=1.
+# Prefer env overrides (see env.example) for real deployments.
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins: ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+auth:
+  enabled: true
+  jwt_secret: "change-me-in-production"
+  jwt_algorithm: "HS256"
+  jwt_expire_minutes: 60
+  admin_password: "admin"
+  api_keys: []
+
+webhooks:
+  url: null
+  secret: null
+
+uploads:
+  temp_directory: "var/uploads"
+  max_file_size_mb: 10
+  allowed_extensions: [".csv", ".parquet", ".pq"]
+
+reports:
+  auto_generate: true
+  output_directory: "var/reports"
+  include_plots: true
+
+persistence:
+  backend: "sqlite"
+  sqlite_path: "aspc.db"
+  timescale_dsn: null
+
+redis:
+  url: "redis://localhost:6379/0"
+  # When true (or ASPC_TENANT_ID set on the stream worker), channels are
+  # spc:live:{tenant_id}:{stream_key}. Document sticky Kafka consumers for scale-out.
+  tenant_prefix: false
+
+kafka:
+  bootstrap: "localhost:9092"
+  topic: "spc.measurements"
+
+spc:
+  ruleset: "nelson"
+  min_phase1_points: 25
+  acf_threshold: 0.2

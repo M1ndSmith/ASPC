@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+dist
+coverage
+playwright-report
+test-results
+e2e/.auth
+.env
+.env.local
+*.log
+.DS_Store
+.vercel
+.env*
