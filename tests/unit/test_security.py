@@ -166,3 +166,47 @@ def test_startup_refuses_empty_api_keys(monkeypatch, tmp_path):
     api_main.cfg.config["auth"]["api_keys"] = []
     with pytest.raises(RuntimeError, match="ASPC_API_KEYS"):
         api_main._startup_security_checks()
+
+
+def test_startup_refuses_weak_secrets_even_when_auth_disabled(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASPC_AUTH_ENABLED", "false")
+    monkeypatch.setenv("ASPC_DEV_INSECURE", "0")
+    monkeypatch.setenv("ASPC_JWT_SECRET", "change-me-in-production")
+    monkeypatch.setenv("ASPC_API_KEYS", "test-key")
+    monkeypatch.setenv("ASPC_ADMIN_PASSWORD", "s3cret")
+    monkeypatch.setenv("ASPC_SQLITE_PATH", str(tmp_path / "sec.db"))
+
+    import apps.api.main as api_main
+    import apps.config as config_mod
+
+    config_mod._config = None
+    api_main.cfg = config_mod.get_config()
+    with pytest.raises(RuntimeError, match="ASPC_JWT_SECRET"):
+        api_main._startup_security_checks()
+
+
+def test_metrics_require_auth(secure_client):
+    r = secure_client.get("/metrics")
+    assert r.status_code == 401
+    token = _token(secure_client)
+    r2 = secure_client.get("/metrics", headers={"Authorization": f"Bearer {token}"})
+    assert r2.status_code == 200
+
+
+def test_bcrypt_is_required():
+    import apps.api.main as api_main
+
+    assert api_main._bcrypt is not None
+
+
+def test_save_upload_uses_uuid_prefix(tmp_path):
+    from io import BytesIO
+
+    from adapters.io_files import save_upload, save_upload_stream
+
+    p1 = save_upload(b"a,b\n1,2\n", tmp_path, "data.csv")
+    p2 = save_upload_stream(BytesIO(b"a,b\n3,4\n"), tmp_path, "data.csv")
+    assert p1.name != "data.csv"
+    assert p1.name.endswith("_data.csv")
+    assert p2.name.endswith("_data.csv")
+    assert p1.name != p2.name

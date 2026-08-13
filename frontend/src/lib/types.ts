@@ -64,6 +64,7 @@ export interface AnalyzeResponse {
   analysis_type: string;
   report: SPCReport | Record<string, unknown>;
   html_report?: string | null;
+  checklist?: Phase1Checklist | null;
 }
 
 export interface RunSummary {

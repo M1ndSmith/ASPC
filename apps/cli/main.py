@@ -76,6 +76,15 @@ def main(argv: list[str] | None = None) -> int:
     srv.add_argument("--host", default=None)
     srv.add_argument("--port", type=int, default=None)
 
+    # doctor / demo / resilience
+    sub.add_parser("doctor", help="Check local ASPC config and dependencies")
+    demo = sub.add_parser("demo", help="Demo helpers")
+    demo_sub = demo.add_subparsers(dest="demo_cmd", required=True)
+    demo_sub.add_parser("up", help="Print one-command Compose + onboarding hints")
+    res = sub.add_parser("resilience", help="Run resilience catalog case(s)")
+    res.add_argument("--case", default=None, help="Case id (default: all via report script)")
+    res.add_argument("--report", action="store_true", help="Write JUDGMENT.md")
+
     args = parser.parse_args(argv)
     cfg = get_config()
 
@@ -89,6 +98,15 @@ def main(argv: list[str] | None = None) -> int:
             port=args.port or cfg.api_port,
         )
         return 0
+
+    if args.cmd == "doctor":
+        return _run_doctor(cfg)
+
+    if args.cmd == "demo":
+        return _run_demo_up()
+
+    if args.cmd == "resilience":
+        return _run_resilience(args)
 
     try:
         columns = load_columns(args.file)
@@ -256,6 +274,84 @@ def _run_msa(args, columns, cfg, repo) -> int:
             print(f"grr_percent: {result.grr_percent}")
         print(f"Run ID: {run_id}")
     return 0
+
+
+def _run_doctor(cfg) -> int:
+    import os
+    import shutil
+    from pathlib import Path
+
+    ok = True
+    root = Path(__file__).resolve().parents[2]
+    print("ASPC doctor")
+    print(f"  config: {cfg.config_path}")
+    print(f"  auth_enabled: {cfg.auth_enabled}")
+    print(f"  dev_insecure: {cfg.dev_insecure}")
+    print(f"  persistence: {cfg.persistence_backend}")
+    if cfg.jwt_secret == "change-me-in-production" and not cfg.dev_insecure:
+        print("  FAIL: ASPC_JWT_SECRET still default — set a secret or ASPC_DEV_INSECURE=1")
+        ok = False
+    else:
+        print("  ok: jwt secret")
+    if cfg.admin_password == "admin" and not cfg.dev_insecure:
+        print("  FAIL: ASPC_ADMIN_PASSWORD still default")
+        ok = False
+    else:
+        print("  ok: admin password")
+    if not cfg.api_keys and not cfg.dev_insecure:
+        print("  FAIL: ASPC_API_KEYS empty")
+        ok = False
+    else:
+        print("  ok: api keys / insecure")
+    print(f"  redis_url: {cfg.redis_url}")
+    print(f"  webhook_url: {cfg.webhook_url or '(none)'}")
+    print(f"  docker: {'yes' if shutil.which('docker') else 'no'}")
+    compose = (root / "docker-compose.yml").exists() or (root / "compose.yaml").exists()
+    print(f"  compose file: {'yes' if compose else 'no'}")
+    print(f"  ASPC_TENANT_ID: {os.getenv('ASPC_TENANT_ID') or '(none)'}")
+    return 0 if ok else 1
+
+
+def _run_demo_up() -> int:
+    print("ASPC demo up")
+    print("Full stack (Compose starts API + UI + streaming infra):")
+    print(
+        "  1. cp deploy/compose/.env.example deploy/compose/.env  # set secrets;"
+        " ASPC_CORS_ORIGINS should include http://localhost:3000 and http://127.0.0.1:3000"
+    )
+    print(
+        "  2. docker compose -f deploy/compose/docker-compose.yml"
+        " --env-file deploy/compose/.env up -d --build"
+    )
+    print("  3. Open http://localhost:3000/onboarding (log in with ASPC_ADMIN_* from .env)")
+    print("  Tip: do not also run `aspc serve` — Compose already exposes the API on :8000")
+    print("")
+    print("Minimal (batch only, no Live streaming):")
+    print("  1. uv pip install -e '.[dev]' && aspc serve --port 8000")
+    print("  2. cd frontend && npm run dev   # UI on :3000")
+    print("  Tip: python -m sample_data --out examples/data")
+    return 0
+
+
+def _run_resilience(args) -> int:
+    if args.report or not args.case:
+        import runpy
+        from pathlib import Path
+
+        report = Path(__file__).resolve().parents[2] / "scripts" / "resilience_report.py"
+        runpy.run_path(str(report), run_name="__main__")
+        return 0
+    from resilience_data import load_manifest
+    from resilience_data.runner import run_case
+
+    cases = {c["id"]: c for c in load_manifest()}
+    if args.case not in cases:
+        print(f"Unknown case: {args.case}", file=sys.stderr)
+        print("Known:", ", ".join(sorted(cases)), file=sys.stderr)
+        return 1
+    result = run_case(cases[args.case])
+    print(json.dumps(result, indent=2, default=str))
+    return 0 if result.get("status") in ("PASS", "XFAIL") else 1
 
 
 if __name__ == "__main__":

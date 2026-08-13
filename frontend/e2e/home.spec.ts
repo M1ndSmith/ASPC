@@ -17,8 +17,8 @@ test("home page loads", async ({ page, baseURL }) => {
   test.skip(!reachable, "Next.js server not running — skipping smoke e2e");
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /dashboard|aspc|overview/i })).toBeVisible({
+  await expect(page.getByRole("heading", { name: /sign in|dashboard|aspc|overview/i })).toBeVisible({
     timeout: 10_000,
   });
-  await expect(page.getByRole("link", { name: /live/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /live/i }).or(page.getByRole("button", { name: /sign in/i }))).toBeVisible();
 });

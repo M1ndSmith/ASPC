@@ -26,6 +26,14 @@ DEFAULTS: dict[str, Any] = {
         "admin_username": "admin",
         "admin_password": "admin",
         "api_keys": [],
+        # Optional demo users: [{username, password, role, tenant_id}]
+        "users": [],
+        "default_role": "admin",
+        "default_tenant_id": None,
+    },
+    "webhooks": {
+        "url": None,
+        "secret": None,
     },
     "uploads": {
         "temp_directory": "var/uploads",
@@ -112,10 +120,26 @@ class Config:
             auth["enabled"] = os.environ["ASPC_AUTH_ENABLED"].lower() in ("1", "true", "yes")
         if os.getenv("ASPC_DEV_INSECURE") is not None:
             auth["dev_insecure"] = os.environ["ASPC_DEV_INSECURE"].lower() in ("1", "true", "yes")
+        if os.getenv("ASPC_DEFAULT_ROLE"):
+            auth["default_role"] = os.environ["ASPC_DEFAULT_ROLE"]
+        if os.getenv("ASPC_TENANT_ID"):
+            auth["default_tenant_id"] = os.environ["ASPC_TENANT_ID"]
+
+        webhooks = self.config.setdefault("webhooks", {})
+        if os.getenv("ASPC_WEBHOOK_URL"):
+            webhooks["url"] = os.environ["ASPC_WEBHOOK_URL"]
+        if os.getenv("ASPC_WEBHOOK_SECRET"):
+            webhooks["secret"] = os.environ["ASPC_WEBHOOK_SECRET"]
 
         redis = self.config.setdefault("redis", {})
         if os.getenv("ASPC_REDIS_URL"):
             redis["url"] = os.environ["ASPC_REDIS_URL"]
+        if os.getenv("ASPC_REDIS_TENANT_PREFIX") is not None:
+            redis["tenant_prefix"] = os.environ["ASPC_REDIS_TENANT_PREFIX"].lower() in (
+                "1",
+                "true",
+                "yes",
+            )
 
         kafka = self.config.setdefault("kafka", {})
         if os.getenv("ASPC_KAFKA_BOOTSTRAP"):
@@ -230,6 +254,33 @@ class Config:
     def dev_insecure(self) -> bool:
         """Explicit opt-out for local/dev insecure auth shortcuts."""
         return bool(self.config["auth"].get("dev_insecure", False))
+
+    @property
+    def auth_users(self) -> list[dict[str, Any]]:
+        return list(self.config["auth"].get("users") or [])
+
+    @property
+    def default_role(self) -> str:
+        return str(self.config["auth"].get("default_role") or "admin")
+
+    @property
+    def default_tenant_id(self) -> str | None:
+        tid = self.config["auth"].get("default_tenant_id")
+        return str(tid) if tid else None
+
+    @property
+    def webhook_url(self) -> str | None:
+        u = (self.config.get("webhooks") or {}).get("url")
+        return str(u) if u else None
+
+    @property
+    def webhook_secret(self) -> str | None:
+        s = (self.config.get("webhooks") or {}).get("secret")
+        return str(s) if s else None
+
+    @property
+    def redis_tenant_prefix(self) -> bool:
+        return bool((self.config.get("redis") or {}).get("tenant_prefix", False))
 
     @property
     def ruleset(self) -> str:

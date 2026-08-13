@@ -53,7 +53,15 @@ def main(argv: list[str] | None = None) -> int:
         logger.error("%s", exc)
         return 2
 
-    engine = StreamEngine(repo, redis_url=redis_url)
+    redis_url = args.redis_url or cfg.redis_url
+    tenant = cfg.default_tenant_id if cfg.redis_tenant_prefix or cfg.default_tenant_id else None
+    engine = StreamEngine(
+        repo,
+        redis_url=redis_url,
+        webhook_url=cfg.webhook_url,
+        webhook_secret=cfg.webhook_secret,
+        tenant_id=tenant,
+    )
 
     # Preload from CLI and/or active stream registry
     for spec in args.preload:

@@ -6,7 +6,7 @@
 services:
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
-    restart: unless-stopped
+    restart: "no"
     command:
       - redpanda
       - start
@@ -36,7 +36,7 @@ services:
 
   mosquitto:
     image: eclipse-mosquitto:2.0
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "127.0.0.1:1883:1883"
     volumes:
@@ -44,7 +44,7 @@ services:
 
   timescaledb:
     image: timescale/timescaledb:latest-pg16
-    restart: unless-stopped
+    restart: "no"
     env_file:
       - .env
     environment:
@@ -63,7 +63,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "127.0.0.1:6379:6379"
     healthcheck:
@@ -91,7 +91,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.api
-    restart: unless-stopped
+    restart: "no"
     env_file:
       - .env
     environment:
@@ -105,8 +105,8 @@ services:
       ASPC_ADMIN_USERNAME: ${ASPC_ADMIN_USERNAME:-admin}
       ASPC_ADMIN_PASSWORD: ${ASPC_ADMIN_PASSWORD:?Set ASPC_ADMIN_PASSWORD in deploy/compose/.env}
       ASPC_AUTH_ENABLED: ${ASPC_AUTH_ENABLED:-true}
-      # Disable create_all race — migrations ran in migrate service
       ASPC_TSDB_INIT: "0"
+      PYTHONPATH: /app
     ports:
       - "8000:8000"
     depends_on:
@@ -127,7 +127,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.stream_engine
-    restart: unless-stopped
+    restart: "no"
     env_file:
       - .env
     environment:
@@ -150,7 +150,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.mqtt_bridge
-    restart: unless-stopped
+    restart: "no"
     environment:
       ASPC_MQTT_HOST: mosquitto
       ASPC_MQTT_PORT: "1883"
@@ -167,11 +167,12 @@ services:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.frontend
-      # NEXT_PUBLIC_* are baked at build time — runtime env does not update the bundle.
+      # NEXT_PUBLIC_* and proxy target are baked at build time.
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/backend}
         NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
-    restart: unless-stopped
+        ASPC_API_PROXY_TARGET: ${ASPC_API_PROXY_TARGET:-http://api:8000}
+    restart: "no"
     ports:
       - "3000:3000"
     depends_on:
@@ -181,7 +182,7 @@ services:
   grafana:
     image: grafana/grafana:11.1.0
     profiles: ["ops"]
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "127.0.0.1:3001:3000"
     volumes:

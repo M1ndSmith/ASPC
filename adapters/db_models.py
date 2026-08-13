@@ -34,6 +34,7 @@ class ControlLimitRow(Base):
     chart_type: Mapped[str] = mapped_column(String(32), nullable=False)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False)
     meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    tenant_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )
@@ -47,6 +48,7 @@ class AnalysisRunRow(Base):
     limits_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     source_file: Mapped[str | None] = mapped_column(Text, nullable=True)
     user_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    tenant_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     report: Mapped[dict] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow, index=True
@@ -70,6 +72,7 @@ class OocEventRow(Base):
     __table_args__ = (
         UniqueConstraint("stream_key", "ts", "rule_id", name="uq_ooc_stream_ts_rule"),
         Index("ix_ooc_stream_ts", "stream_key", "ts"),
+        Index("ix_ooc_acked", "acked"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -85,6 +88,7 @@ class OocEventRow(Base):
     acked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     acked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     acked_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    tenant_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
 
 
 class CapabilityHistoryRow(Base):
@@ -122,6 +126,7 @@ class RawMeasurementRow(Base):
     machine_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     gage_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     limits_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    tenant_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
 
 
 class StreamRegistryRow(Base):
@@ -133,7 +138,9 @@ class StreamRegistryRow(Base):
     chart_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
     ruleset: Mapped[str] = mapped_column(String(64), nullable=False, default="nelson")
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    measurement_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    tenant_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )

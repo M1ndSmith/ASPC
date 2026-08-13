@@ -281,11 +281,18 @@ class TimescaleDBRepository(Repository):
                     .values(**values)
                     .on_conflict_do_nothing(constraint="pk_raw_measurements")
                 )
-                session.execute(stmt)
+                result = session.execute(stmt)
+                if (result.rowcount or 0) > 0:
+                    reg = session.get(StreamRegistryRow, stream_key)
+                    if reg is not None:
+                        reg.measurement_count = int(reg.measurement_count or 0) + 1
                 session.commit()
                 return
             try:
                 session.add(RawMeasurementRow(**values))
+                reg = session.get(StreamRegistryRow, stream_key)
+                if reg is not None:
+                    reg.measurement_count = int(reg.measurement_count or 0) + 1
                 session.commit()
             except IntegrityError:
                 session.rollback()
@@ -552,6 +559,8 @@ def _stream_to_dict(row: StreamRegistryRow) -> dict[str, Any]:
         "chart_type": row.chart_type,
         "ruleset": row.ruleset,
         "active": row.active,
+        "measurement_count": int(getattr(row, "measurement_count", 0) or 0),
+        "tenant_id": getattr(row, "tenant_id", None),
         "meta": row.meta or {},
         "created_at": row.created_at.isoformat()
         if isinstance(row.created_at, datetime)

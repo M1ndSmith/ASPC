@@ -25,11 +25,18 @@ jobs:
       - name: Install package with dev extras
         run: uv pip install --system -e ".[dev]"
       - name: Ruff
-        run: ruff check spc_core adapters apps services sample_data scripts tests
+        run: ruff check spc_core adapters apps services sample_data resilience_data combinatorial scripts tests benchmarks
       - name: Mypy (spc_core)
         run: mypy spc_core --ignore-missing-imports
       - name: Pytest
         run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q --tb=short -m "not integration"
+      - name: Resilience judgment report
+        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python scripts/resilience_report.py
+      - name: Combinatorial sparse matrix
+        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m combinatorial run --mode sparse --max-sparse 40
+        continue-on-error: true
+      - name: Accuracy benchmarks
+        run: python benchmarks/accuracy.py
       - name: Acceptance — no stubs, all ChartTypes real
         run: |
           python - <<'PY'

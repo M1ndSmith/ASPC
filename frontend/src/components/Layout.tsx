@@ -19,6 +19,15 @@ const NAV = [
     ),
   },
   {
+    href: "/onboarding",
+    label: "Onboarding",
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.75">
+        <path d="M12 3v18M5 10l7-7 7 7" />
+      </svg>
+    ),
+  },
+  {
     href: "/live",
     label: "Live",
     icon: (
@@ -68,14 +77,26 @@ const NAV = [
       </svg>
     ),
   },
+  {
+    href: "/lab",
+    label: "Lab",
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.75">
+        <path d="M9 3h6v6l4 8H5l4-8V3z" />
+        <path d="M9 9h6" />
+      </svg>
+    ),
+  },
 ];
 
 function titleForPath(pathname: string): string {
   if (pathname === "/") return "Dashboard";
+  if (pathname.startsWith("/onboarding")) return "Onboarding";
   if (pathname.startsWith("/live")) return "Live";
   if (pathname.startsWith("/analyze")) return "Analyze";
   if (pathname.startsWith("/capability")) return "Capability";
   if (pathname.startsWith("/msa")) return "MSA";
+  if (pathname.startsWith("/lab")) return "Resilience Lab";
   if (pathname.startsWith("/runs/")) return "Run detail";
   if (pathname.startsWith("/runs")) return "Runs";
   return "ASPC";

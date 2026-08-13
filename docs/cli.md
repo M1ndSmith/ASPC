@@ -93,6 +93,48 @@ aspc serve --port 8000
 aspc-api
 ```
 
+`aspc serve` is the **minimal** path (SQLite, no Live streaming). Full Compose already starts the API — do not also run `aspc serve` on port 8000.
+
+### `aspc doctor`
+
+Prints a local health checklist: config load, persistence backend, Redis/Kafka URLs, Compose file present, webhook URL, `ASPC_TENANT_ID`. Exit `1` if required pieces are missing.
+
+```bash
+aspc doctor
+```
+
+### `aspc demo up`
+
+Prints how to start a demo. It does **not** start Docker by itself.
+
+```bash
+aspc demo up
+```
+
+Full stack (Compose starts API + UI + streaming):
+
+```bash
+cp deploy/compose/.env.example deploy/compose/.env
+docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env up -d --build
+# Open http://localhost:3000/onboarding
+```
+
+### `aspc resilience`
+
+Runs the [`resilience_data/`](../resilience_data/) judgment catalog.
+
+| Flag | Description |
+|------|-------------|
+| `--report` | Write `resilience_data/JUDGMENT.md` (default if `--case` omitted) |
+| `--case ID` | Run a single catalog case and print JSON |
+
+```bash
+aspc resilience
+aspc resilience --case imr_in_control_n50
+```
+
+See [resilience_data/README.md](../resilience_data/README.md). Combinatorial matrix (batch + in-process Phase II): `python -m combinatorial report --mode sparse`.
+
 ## Column auto-detection
 
 [`spc_core.ingest`](../spc_core/ingest.py) maps common header names (`measurement`, `Part`, `Operator`, `subgroup`, `defective`, `inspected`, …). Pass explicit `--*-col` flags when headers are nonstandard.

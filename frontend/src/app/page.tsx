@@ -16,6 +16,13 @@ function asSpcReport(raw: unknown): SPCReport | null {
 
 const ACTIONS = [
   {
+    href: "/onboarding",
+    title: "Onboarding",
+    ticker: "15m",
+    blurb: "Sample → freeze → go-live",
+    tone: "accent" as const,
+  },
+  {
     href: "/analyze",
     title: "Analyze",
     ticker: "SPC",
@@ -30,17 +37,10 @@ const ACTIONS = [
     tone: "accent" as const,
   },
   {
-    href: "/capability",
-    title: "Capability",
-    ticker: "Cpk",
-    blurb: "Process capability",
-    tone: "ok" as const,
-  },
-  {
-    href: "/msa",
-    title: "MSA",
-    ticker: "GRR",
-    blurb: "Measurement systems",
+    href: "/lab",
+    title: "Lab",
+    ticker: "RES",
+    blurb: "Resilience cases",
     tone: "warn" as const,
   },
 ];
@@ -51,6 +51,11 @@ export default function DashboardPage() {
   const streams = useQuery({
     queryKey: ["streams"],
     queryFn: api.listStreams,
+    retry: false,
+  });
+  const ops = useQuery({
+    queryKey: ["ops-summary"],
+    queryFn: api.opsSummary,
     retry: false,
   });
 
@@ -107,8 +112,41 @@ export default function DashboardPage() {
             value={runs.isLoading ? "…" : String(recent.length)}
             positive={recent.length > 0 ? true : null}
           />
+          <div className="hidden h-10 w-px bg-aspc-border sm:block" />
+          <DeltaChip
+            label="Debt"
+            value={ops.isLoading ? "…" : String(ops.data?.checklist_debt ?? 0)}
+            positive={(ops.data?.checklist_debt ?? 0) === 0 ? true : false}
+          />
         </div>
       </section>
+
+      {ops.data && ops.data.streams.length > 0 && (
+        <Panel title="Multi-stream ops">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[28rem] text-left text-sm">
+              <thead>
+                <tr className="border-b border-aspc-border text-[11px] uppercase tracking-wider text-aspc-muted">
+                  <th className="pb-2 pr-3 font-medium">Stream</th>
+                  <th className="pb-2 pr-3 font-medium">Active</th>
+                  <th className="pb-2 pr-3 font-medium">Chart</th>
+                  <th className="pb-2 font-medium">Limits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ops.data.streams.map((s) => (
+                  <tr key={s.stream_key} className="border-b border-aspc-border/40">
+                    <td className="py-2 pr-3 font-mono text-aspc-accent">{s.stream_key}</td>
+                    <td className="py-2 pr-3">{s.active ? "yes" : "no"}</td>
+                    <td className="py-2 pr-3 font-mono">{s.chart_type || "—"}</td>
+                    <td className="py-2 font-mono text-xs">{s.limits_version || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      )}
 
       {/* Action cards */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

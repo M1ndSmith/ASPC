@@ -15,6 +15,7 @@ logger = logging.getLogger("aspc.mqtt_bridge")
 
 def _produce_kafka(bootstrap: str, topic: str, messages):
     """Lazy-import aiokafka producer wrapped for sync use, or kafka-python."""
+    batch_size = int(os.getenv("ASPC_KAFKA_BATCH_FLUSH", "50"))
     try:
         from kafka import KafkaProducer  # type: ignore[import-untyped]
 
@@ -22,13 +23,22 @@ def _produce_kafka(bootstrap: str, topic: str, messages):
             bootstrap_servers=bootstrap.split(","),
             value_serializer=lambda v: json.dumps(v, default=str).encode("utf-8"),
             key_serializer=lambda v: v.encode("utf-8") if v else None,
+            linger_ms=50,
+            batch_size=16384,
         )
+        pending = {"n": 0}
 
         def send(key: str, payload: dict[str, Any]) -> None:
             producer.send(topic, key=key, value=payload)
-            producer.flush()
+            pending["n"] += 1
+            if pending["n"] >= batch_size:
+                producer.flush()
+                logger.debug("Kafka flush after %s messages", pending["n"])
+                pending["n"] = 0
 
         def close() -> None:
+            if pending["n"]:
+                producer.flush()
             producer.close()
 
         return send, close
@@ -46,16 +56,24 @@ def _produce_kafka(bootstrap: str, topic: str, messages):
         ) from exc
 
     loop = asyncio.new_event_loop()
-    producer = AIOKafkaProducer(bootstrap_servers=bootstrap)
+    producer = AIOKafkaProducer(bootstrap_servers=bootstrap, linger_ms=50)
     loop.run_until_complete(producer.start())
+    pending = {"n": 0}
 
     def send(key: str, payload: dict[str, Any]) -> None:
         data = json.dumps(payload, default=str).encode("utf-8")
         loop.run_until_complete(
-            producer.send_and_wait(topic, value=data, key=key.encode("utf-8"))
+            producer.send(topic, value=data, key=key.encode("utf-8"))
         )
+        pending["n"] += 1
+        if pending["n"] >= batch_size:
+            loop.run_until_complete(producer.flush())
+            logger.debug("Kafka flush after %s messages", pending["n"])
+            pending["n"] = 0
 
     def close() -> None:
+        if pending["n"]:
+            loop.run_until_complete(producer.flush())
         loop.run_until_complete(producer.stop())
         loop.close()
 
@@ -67,13 +85,16 @@ def _normalise(msg: dict[str, Any]) -> dict[str, Any]:
     value = msg.get("value")
     if value is None:
         raise ValueError(f"MQTT payload missing value: {msg!r}")
+    if isinstance(value, (list, tuple)):
+        value = [float(v) for v in value]
+    else:
+        value = float(value)
     ts = msg.get("timestamp") or msg.get("ts")
     if isinstance(ts, datetime):
         ts = ts.isoformat()
     elif ts is None:
-
         ts = datetime.now(UTC).isoformat()
-    return {"key": key, "value": float(value), "timestamp": ts}
+    return {"key": key, "value": value, "timestamp": ts}
 
 
 def main(argv: list[str] | None = None) -> int:

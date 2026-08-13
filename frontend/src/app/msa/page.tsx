@@ -53,7 +53,7 @@ export default function MsaPage() {
       <PageHeader
         title="MSA"
         hideTitle
-        subtitle="Gage R&R, bias, linearity, stability — plus continuous MSA drift placeholder"
+        subtitle="Gage R&R, bias, linearity, stability — plus continuous MSA drift"
       />
 
       {error && <ErrorBanner message={error} />}
@@ -137,15 +137,98 @@ export default function MsaPage() {
       )}
 
       <Panel title="Continuous MSA drift">
-        <div className="rounded-2xl border border-dashed border-aspc-border bg-aspc-elevated/40 px-4 py-10 text-center">
-          <p className="text-xs font-medium uppercase tracking-widest text-aspc-accent">Coming online</p>
-          <p className="mx-auto mt-2 max-w-md text-sm text-aspc-muted">
-            Live bias EWMA (α=0.2), rolling R, and calibration alerts from ContinuousMSA will render
-            here once the stream engine publishes drift metrics on the selected stream.
-          </p>
-          <div className="mx-auto mt-6 h-24 max-w-lg rounded-2xl bg-gradient-to-r from-aspc-border/20 via-aspc-accent/15 to-aspc-border/20" />
-        </div>
+        <ContinuousMsaPanel />
       </Panel>
+    </div>
+  );
+}
+
+function ContinuousMsaPanel() {
+  const [measured, setMeasured] = useState("10.1,10.2,10.0,10.4,10.5");
+  const [reference, setReference] = useState("10,10,10,10,10");
+  const [tolerance, setTolerance] = useState("1");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    try {
+      const m = measured.split(",").map((s) => Number(s.trim()));
+      const r = reference.split(",").map((s) => Number(s.trim()));
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/analyze/msa-continuous`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(typeof window !== "undefined" && localStorage.getItem("aspc_token")
+              ? { Authorization: `Bearer ${localStorage.getItem("aspc_token")}` }
+              : {}),
+          },
+          body: JSON.stringify({
+            measured: m,
+            reference: r,
+            tolerance: Number(tolerance) || 1,
+          }),
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || res.statusText);
+      }
+      const body = (await res.json()) as { summary: Record<string, unknown> };
+      setSummary(body.summary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-aspc-muted">
+        Evaluate reference-standard injections with{" "}
+        <code className="font-mono text-xs">ContinuousMSA</code> (EWMA bias α=0.2, rolling R,
+        calibration alerts).
+      </p>
+      {error && <ErrorBanner message={error} />}
+      <div className="grid gap-3 md:grid-cols-3">
+        <label className="text-xs text-aspc-muted">
+          Measured
+          <input
+            className="mt-1 w-full rounded-2xl border border-aspc-border bg-aspc-elevated px-3 py-2 font-mono text-sm"
+            value={measured}
+            onChange={(e) => setMeasured(e.target.value)}
+          />
+        </label>
+        <label className="text-xs text-aspc-muted">
+          Reference
+          <input
+            className="mt-1 w-full rounded-2xl border border-aspc-border bg-aspc-elevated px-3 py-2 font-mono text-sm"
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+          />
+        </label>
+        <label className="text-xs text-aspc-muted">
+          Tolerance
+          <input
+            className="mt-1 w-full rounded-2xl border border-aspc-border bg-aspc-elevated px-3 py-2 font-mono text-sm"
+            value={tolerance}
+            onChange={(e) => setTolerance(e.target.value)}
+          />
+        </label>
+      </div>
+      <PrimaryButton onClick={run} disabled={busy}>
+        {busy ? "Evaluating…" : "Run continuous MSA"}
+      </PrimaryButton>
+      {summary && (
+        <pre className="max-h-64 overflow-auto rounded-2xl bg-aspc-elevated p-3 text-xs text-aspc-muted">
+          {JSON.stringify(summary, null, 2)}
+        </pre>
+      )}
     </div>
   );
 }

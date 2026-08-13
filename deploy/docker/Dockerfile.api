@@ -25,6 +25,7 @@ RUN uv pip install --system --no-cache -e ".[apps,data,render,tsdb,stream]"
 ENV PYTHONUNBUFFERED=1
 ENV ASPC_API_HOST=0.0.0.0
 ENV ASPC_API_PORT=8000
+ENV PYTHONPATH=/app
 
 EXPOSE 8000
 

@@ -22,10 +22,8 @@ export function connectLiveSocket(
   onMessage: (msg: LivePointMessage) => void,
   options: LiveSocketOptions = {},
 ): LiveSocketHandle {
-  const params = new URLSearchParams();
-  if (options.token) params.set("token", options.token);
-  const qs = params.toString();
-  const url = `${WS_URL}/ws/live/${encodeURIComponent(streamKey)}${qs ? `?${qs}` : ""}`;
+  // Auth is sent as the first JSON message after connect — never in the URL.
+  const url = `${WS_URL}/ws/live/${encodeURIComponent(streamKey)}`;
 
   let closed = false;
   let ws: WebSocket | null = null;
@@ -48,6 +46,9 @@ export function connectLiveSocket(
 
     ws.onopen = () => {
       attempt = 0;
+      if (options.token) {
+        ws?.send(JSON.stringify({ type: "auth", token: options.token }));
+      }
       options.onOpen?.();
     };
 

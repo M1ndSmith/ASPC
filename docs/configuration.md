@@ -29,6 +29,15 @@ Application config is YAML defaults merged with environment overrides. Sources:
 | `admin_password` | `admin` (refused at startup unless `ASPC_DEV_INSECURE=1`) | Password accepted by `/auth/token` |
 | `api_keys` | `[]` (refused at startup unless `ASPC_DEV_INSECURE=1`) | Allowed `X-API-Key` values |
 
+### `webhooks`
+
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `url` | `null` | Optional signed OOC webhook URL (copied onto stream `meta` at go-live) |
+| `secret` | `null` | HMAC secret for webhook payloads |
+
+Env: `ASPC_WEBHOOK_URL`, `ASPC_WEBHOOK_SECRET`.
+
 ### `uploads` / `reports`
 
 | Key | Default |
@@ -85,6 +94,8 @@ Factory: [`adapters/factory.py`](../adapters/factory.py) → `SQLiteRepository` 
 | `ASPC_REDIS_URL` | `redis.url` |
 | `ASPC_KAFKA_BOOTSTRAP` | `kafka.bootstrap` |
 | `ASPC_KAFKA_TOPIC` | `kafka.topic` |
+| `ASPC_WEBHOOK_URL` | `webhooks.url` |
+| `ASPC_WEBHOOK_SECRET` | `webhooks.secret` |
 
 MQTT bridge also reads `ASPC_MQTT_HOST`, `ASPC_MQTT_PORT`, `ASPC_MQTT_TOPIC` (service-level, not in `Config`).
 

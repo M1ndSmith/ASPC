@@ -15,6 +15,10 @@ auth:
   admin_password: "admin"
   api_keys: []
 
+webhooks:
+  url: null
+  secret: null
+
 uploads:
   temp_directory: "var/uploads"
   max_file_size_mb: 10
@@ -32,6 +36,9 @@ persistence:
 
 redis:
   url: "redis://localhost:6379/0"
+  # When true (or ASPC_TENANT_ID set on the stream worker), channels are
+  # spc:live:{tenant_id}:{stream_key}. Document sticky Kafka consumers for scale-out.
+  tenant_prefix: false
 
 kafka:
   bootstrap: "localhost:9092"

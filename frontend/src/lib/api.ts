@@ -6,8 +6,17 @@ import type {
   TokenResponse,
 } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
 const TOKEN_KEY = "aspc_token";
+
+function unreachableApiHint(err: unknown): string {
+  if (!(err instanceof TypeError)) return "";
+  return (
+    " — browser could not complete the request. " +
+    `Tried ${API_URL}. Prefer same-origin NEXT_PUBLIC_API_URL=/backend (Compose default). ` +
+    "Or open http://localhost:3000 and ensure ASPC_CORS_ORIGINS includes your UI origin."
+  );
+}
 
 export class ApiError extends Error {
   status: number;
@@ -61,11 +70,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     res = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch (err) {
-    const hint =
-      err instanceof TypeError
-        ? " (network/CORS — check API is up and ASPC_CORS_ORIGINS includes this origin)"
-        : "";
-    throw new ApiError(`Cannot reach API at ${API_URL}${hint}`, 0);
+    throw new ApiError(`Cannot reach API at ${API_URL}${unreachableApiHint(err)}`, 0);
   }
 
   if (!res.ok) {
@@ -91,11 +96,7 @@ async function upload(path: string, form: FormData): Promise<AnalyzeResponse> {
   try {
     res = await fetch(`${API_URL}${path}`, { method: "POST", headers, body: form });
   } catch (err) {
-    const hint =
-      err instanceof TypeError
-        ? " (network/CORS — check API is up and ASPC_CORS_ORIGINS includes this origin)"
-        : "";
-    throw new ApiError(`Cannot reach API at ${API_URL}${hint}`, 0);
+    throw new ApiError(`Cannot reach API at ${API_URL}${unreachableApiHint(err)}`, 0);
   }
 
   if (!res.ok) {
@@ -122,11 +123,7 @@ export async function login(username: string, password: string): Promise<void> {
       body,
     });
   } catch (err) {
-    const hint =
-      err instanceof TypeError
-        ? " (network/CORS — check API is up and ASPC_CORS_ORIGINS includes this origin)"
-        : "";
-    throw new ApiError(`Cannot reach API at ${API_URL}${hint}`, 0);
+    throw new ApiError(`Cannot reach API at ${API_URL}${unreachableApiHint(err)}`, 0);
   }
 
   if (!res.ok) {
@@ -170,4 +167,90 @@ export const api = {
       throw err;
     }
   },
+
+  registerStream: (body: {
+    stream_key: string;
+    topic?: string;
+    chart_type?: string;
+    ruleset?: string;
+  }, apiKey: string) =>
+    request<{ stream_key: string; active: boolean }>("/streams/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey,
+      },
+      body: JSON.stringify(body),
+    }),
+
+  goLive: (streamKey: string, body: { limits_version: string; ruleset?: string }, apiKey: string) =>
+    request<{ stream_key: string; limits_version: string; active: boolean; ruleset: string }>(
+      `/streams/${encodeURIComponent(streamKey)}/go-live`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey,
+        },
+        body: JSON.stringify(body),
+      },
+    ),
+
+  ackAlert: (eventId: number, apiKey: string) =>
+    request<Record<string, unknown>>(`/alerts/${eventId}/ack`, {
+      method: "POST",
+      headers: { "X-API-Key": apiKey },
+    }),
+
+  me: () =>
+    request<{ username?: string; role?: string; tenant_id?: string; auth?: string }>("/auth/me"),
+
+  onboardingSample: (dataset = "spc_individual_in_control") =>
+    request<{ dataset: string; filename: string; csv: string; catalog: string[] }>(
+      `/onboarding/sample?dataset=${encodeURIComponent(dataset)}`,
+    ),
+
+  explain: (body: {
+    signal: Record<string, unknown>;
+    limits_version?: string;
+    gates?: unknown[];
+    checklist?: unknown;
+  }) =>
+    request<Record<string, unknown>>("/analyze/explain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+
+  limitsDiff: (a: string, b: string) =>
+    request<Record<string, unknown>>(
+      `/limits/${encodeURIComponent(a)}/diff/${encodeURIComponent(b)}`,
+    ),
+
+  labCases: () =>
+    request<{
+      cases: { id: string; category?: string; entry?: string; description?: string }[];
+    }>("/lab/cases"),
+
+  labRunCase: (caseId: string) =>
+    request<Record<string, unknown>>(`/lab/cases/${encodeURIComponent(caseId)}/run`, {
+      method: "POST",
+    }),
+
+  opsSummary: () =>
+    request<{
+      streams_total: number;
+      streams_active: number;
+      streams: {
+        stream_key: string;
+        active?: boolean;
+        limits_version?: string;
+        chart_type?: string;
+        tenant_id?: string;
+      }[];
+      recent_runs: number;
+      checklist_debt: number;
+    }>("/ops/summary"),
+
+  exportRunXlsxUrl: (runId: string) => `${API_URL}/runs/${encodeURIComponent(runId)}/export.xlsx`,
 };

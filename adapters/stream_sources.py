@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import queue
 import threading
 from collections.abc import AsyncIterator, Iterator
@@ -195,10 +196,31 @@ class KafkaSource(_AsyncSourceBase, ObservationSource):
                         obs = _parse_payload(
                             msg.value or b"", default_key=key_hint or self.default_key
                         )
-                    except Exception:
-                        # Poison message: commit past it so it is not retried forever
+                    except Exception as poison_exc:
+                        # Poison message: route to DLQ (best-effort) then commit past it.
+                        dlq = os.getenv("ASPC_KAFKA_DLQ_TOPIC", f"{self.topic}.dlq")
+                        try:
+                            from aiokafka import AIOKafkaProducer
+
+                            prod = AIOKafkaProducer(bootstrap_servers=self.bootstrap_servers)
+                            await prod.start()
+                            try:
+                                await prod.send_and_wait(
+                                    dlq,
+                                    value=msg.value or b"",
+                                    key=msg.key,
+                                )
+                            finally:
+                                await prod.stop()
+                            logger.warning(
+                                "Poison Kafka message sent to %s: %s", dlq, poison_exc
+                            )
+                        except Exception:  # noqa: BLE001
+                            logger.exception(
+                                "Failed to publish poison message to DLQ %s", dlq
+                            )
                         await consumer.commit()
-                        raise
+                        continue
                     yield obs.as_dict()
                     await consumer.commit()
             except asyncio.CancelledError:

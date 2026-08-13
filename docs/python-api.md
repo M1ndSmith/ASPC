@@ -126,6 +126,19 @@ path = write_csv(spc_individual(in_control=False), "examples/data/phase2.csv")
 signals = stream_evaluate(FileReplaySource(path, "measurement"), limits)
 ```
 
+## Explain signals
+
+Deterministic “why” for an OOC `Signal` (catalog text only — no LLM):
+
+```python
+from spc_core.explain import explain_signal
+
+exp = explain_signal(signals[0], limits_version=pipe.limits_version, limits=limits)
+print(exp["rule_id"], exp["operator_summary"])
+```
+
+HTTP: `POST /analyze/explain`. Lab UI: `/lab`.
+
 ## Reports
 
 ```python

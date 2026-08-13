@@ -1,0 +1,1231 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "imr_in_control_n50",
+      "path": "cases/spc/imr_in_control_n50.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC",
+        "ISO_7870"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "stopped": false,
+        "frozen": true,
+        "chart_type": "I-MR",
+        "gates": {
+          "freeze": "ok",
+          "autocorrelation": "ok",
+          "multimodal": "ok"
+        },
+        "n_signals": {
+          "lte": 5
+        }
+      }
+    },
+    {
+      "id": "xbar_r_25x5",
+      "path": "cases/spc/xbar_r_25x5.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC",
+        "ISO_7870"
+      ],
+      "columns": {
+        "values": "measurement",
+        "subgroup_ids": "subgroup"
+      },
+      "params": {
+        "chart_type": "Xbar-R"
+      },
+      "expect": {
+        "stopped": false,
+        "frozen": true,
+        "chart_type": "Xbar-R",
+        "gates": {
+          "freeze": "ok"
+        }
+      }
+    },
+    {
+      "id": "xbar_s_25x10",
+      "path": "cases/spc/xbar_s_25x10.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC",
+        "ISO_7870"
+      ],
+      "columns": {
+        "values": "measurement",
+        "subgroup_ids": "subgroup"
+      },
+      "params": {
+        "chart_type": "Xbar-S"
+      },
+      "expect": {
+        "stopped": false,
+        "frozen": true,
+        "chart_type": "Xbar-S",
+        "gates": {
+          "freeze": "ok"
+        }
+      }
+    },
+    {
+      "id": "p_in_control",
+      "path": "cases/spc/p_in_control.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC",
+        "ISO_7870"
+      ],
+      "columns": {
+        "values": "defective",
+        "sample_sizes": "inspected"
+      },
+      "params": {
+        "chart_type": "P"
+      },
+      "expect": {
+        "stopped": false,
+        "frozen": true,
+        "chart_type": "P",
+        "n_plotted": 25,
+        "gates": {
+          "freeze": "ok",
+          "normality": "ok",
+          "multimodal": "__absent__"
+        },
+        "notes": "Count data is binomial, so the dip test must not run: its tie-heavy ECDF over a handful of distinct integers reads as multimodal and used to STOP in-control attribute studies. multimodal '__absent__' asserts the skip."
+      }
+    },
+    {
+      "id": "np_in_control",
+      "path": "cases/spc/np_in_control.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC",
+        "ISO_7870"
+      ],
+      "columns": {
+        "values": "defectives",
+        "sample_sizes": "sample_size"
+      },
+      "params": {
+        "chart_type": "NP"
+      },
+      "expect": {
+        "stopped": false,
+        "frozen": true,
+        "chart_type": "NP",
+        "n_plotted": 25,
+        "gates": {
+          "freeze": "ok",
+          "normality": "ok",
+          "multimodal": "__absent__"
+        }
+      }
+    },
+    {
+      "id": "c_in_control",
+      "path": "cases/spc/c_in_control.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC",
+        "ISO_7870"
+      ],
+      "columns": {
+        "values": "defects"
+      },
+      "params": {
+        "chart_type": "C"
+      },
+      "expect": {
+        "stopped": false,
+        "frozen": true,
+        "chart_type": "C",
+        "n_plotted": 25,
+        "gates": {
+          "freeze": "ok",
+          "normality": "ok",
+          "multimodal": "__absent__"
+        }
+      }
+    },
+    {
+      "id": "u_in_control",
+      "path": "cases/spc/u_in_control.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC",
+        "ISO_7870"
+      ],
+      "columns": {
+        "values": "defects",
+        "opportunities": "units"
+      },
+      "params": {
+        "chart_type": "U"
+      },
+      "expect": {
+        "stopped": false,
+        "frozen": true,
+        "chart_type": "U",
+        "n_plotted": 25,
+        "gates": {
+          "freeze": "ok",
+          "normality": "ok",
+          "multimodal": "__absent__"
+        }
+      }
+    },
+    {
+      "id": "imr_mean_shift",
+      "path": "cases/spc/imr_mean_shift.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "chart_type": "EWMA",
+        "chart_route": "EWMA",
+        "gates": {
+          "autocorrelation": "warn",
+          "multimodal": "__absent__",
+          "normality": "__absent__"
+        },
+        "n_signals": {
+          "gte": 1
+        },
+        "rule_ids": {
+          "includes": [
+            "EWMA1"
+          ]
+        },
+        "frozen": true,
+        "stopped": false
+      }
+    },
+    {
+      "id": "imr_single_spike",
+      "path": "cases/spc/imr_single_spike.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "chart_type": "I-MR",
+        "n_signals": {
+          "gte": 1
+        },
+        "rule_ids": {
+          "includes": [
+            "1"
+          ]
+        },
+        "frozen": true
+      }
+    },
+    {
+      "id": "imr_trend",
+      "path": "cases/spc/imr_trend.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "chart_type": "EWMA",
+        "chart_route": "EWMA",
+        "gates": {
+          "autocorrelation": "warn",
+          "multimodal": "__absent__",
+          "normality": "__absent__"
+        },
+        "n_signals": {
+          "gte": 1
+        },
+        "rule_ids": {
+          "includes": [
+            "EWMA1"
+          ]
+        },
+        "frozen": true
+      }
+    },
+    {
+      "id": "xbar_r_variance_increase",
+      "path": "cases/spc/xbar_r_variance_increase.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "subgroup_ids": "subgroup"
+      },
+      "params": {
+        "chart_type": "Xbar-R"
+      },
+      "expect": {
+        "chart_type": "Xbar-R",
+        "frozen": true,
+        "stopped": false,
+        "secondary_name": "range",
+        "n_secondary_signals": {
+          "gte": 10
+        },
+        "secondary_rule_ids": {
+          "includes": [
+            "1"
+          ]
+        },
+        "notes": "A dispersion shift shows up on the R chart, so the assertion must be on secondary_signals; the Xbar chart alone barely reacts."
+      }
+    },
+    {
+      "id": "imr_sustained_small_shift",
+      "path": "cases/spc/imr_sustained_small_shift.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC",
+        "ISO_7870"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "chart_type": "I-MR",
+        "chart_route": "shewhart",
+        "ruleset_applied": "nelson",
+        "gates": {
+          "autocorrelation": "ok",
+          "normality": "ok"
+        },
+        "rule_ids": {
+          "includes": [
+            "2",
+            "6"
+          ],
+          "excludes": [
+            "1"
+          ]
+        },
+        "frozen": true,
+        "stopped": false,
+        "notes": "A 0.8-sigma sustained shift stays under the autocorrelation gate, so it remains on the Shewhart route. No point breaches 3 sigma, so excludes ['1'] is the point of the case: only the run rules catch this."
+      }
+    },
+    {
+      "id": "imr_trend_nelson3",
+      "path": "cases/spc/imr_trend_nelson3.csv",
+      "entry": "analyze_control_chart",
+      "standards": [
+        "AIAG_SPC",
+        "ISO_7870"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "ruleset": "nelson"
+      },
+      "expect": {
+        "chart_type": "I-MR",
+        "ruleset_applied": "nelson",
+        "rule_ids": {
+          "includes": [
+            "3",
+            "5",
+            "8"
+          ]
+        },
+        "notes": "Nelson 3 (six monotonic points), plus the zone tests a strong drift necessarily trips on the way out: 5 (2 of 3 beyond 2 sigma) and 8 (8 in a row beyond 1 sigma). Asserted at the chart layer because a drift is autocorrelated by construction, so establish() correctly diverts it to EWMA and the Shewhart trend rule would never run."
+      }
+    },
+    {
+      "id": "imr_alternating_nelson4",
+      "path": "cases/spc/imr_alternating_nelson4.csv",
+      "entry": "analyze_control_chart",
+      "standards": [
+        "AIAG_SPC",
+        "ISO_7870"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "ruleset": "nelson"
+      },
+      "expect": {
+        "chart_type": "I-MR",
+        "ruleset_applied": "nelson",
+        "rule_ids": {
+          "includes": [
+            "4",
+            "7"
+          ]
+        },
+        "notes": "Sawtooth from operator over-adjustment: Nelson 4 (14 alternating) plus Nelson 7 (15 within 1 sigma, because the sawtooth inflates the moving range and so the limits)."
+      }
+    },
+    {
+      "id": "imr_we_full_ruleset",
+      "path": "cases/spc/imr_trend_nelson3.csv",
+      "entry": "analyze_control_chart",
+      "standards": [
+        "WesternElectric",
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "ruleset": "western_electric"
+      },
+      "expect": {
+        "ruleset_applied": "western_electric",
+        "rule_ids": {
+          "includes": [
+            "WE1",
+            "WE2",
+            "WE3",
+            "WE4"
+          ],
+          "subset_of": [
+            "WE1",
+            "WE2",
+            "WE3",
+            "WE4"
+          ]
+        },
+        "notes": "Only case exercising the Western Electric ruleset. subset_of proves no Nelson-numbered rule leaks through when WE is selected."
+      }
+    },
+    {
+      "id": "imr_mean_shift_phase2",
+      "path": "cases/spc/imr_mean_shift.csv",
+      "entry": "phase2_detect",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "split": 25
+      },
+      "expect": {
+        "n_signals": {
+          "gte": 1
+        },
+        "rule_ids": {
+          "includes": [
+            "1"
+          ]
+        },
+        "frozen": true
+      }
+    },
+    {
+      "id": "normal_path",
+      "path": "cases/spc/normal_path.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "distribution_flag": "NORMAL",
+        "gates": {
+          "normality": "ok",
+          "freeze": "ok",
+          "autocorrelation": "ok"
+        },
+        "frozen": true,
+        "stopped": false,
+        "chart_type": "I-MR"
+      }
+    },
+    {
+      "id": "skewed_boxcox",
+      "path": "cases/spc/skewed_boxcox.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC",
+        "Wheeler"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "distribution_flag": "TRANSFORMED",
+        "gates": {
+          "normality": "ok",
+          "multimodal": "ok",
+          "freeze": "ok"
+        },
+        "frozen": true,
+        "stopped": false
+      }
+    },
+    {
+      "id": "heavy_tail_wheeler",
+      "path": "cases/spc/heavy_tail_wheeler.csv",
+      "entry": "establish",
+      "standards": [
+        "Wheeler"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "chart_route": "wheeler",
+        "distribution_flag": "NON_NORMAL_RAW",
+        "gates": {
+          "normality": "warn"
+        },
+        "chart_type": "I-MR",
+        "frozen": true,
+        "ruleset_applied": "wheeler",
+        "rule_ids": {
+          "subset_of": [
+            "1"
+          ]
+        },
+        "notes": "subset_of proves Wheeler actually suppressed the zone/run tests; the chart_route label alone would pass even if all 8 Nelson rules still ran."
+      }
+    },
+    {
+      "id": "heavy_tail_wheeler_subgroup",
+      "path": "cases/spc/heavy_tail_wheeler_subgroup.csv",
+      "entry": "establish",
+      "standards": [
+        "Wheeler",
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "subgroup_ids": "subgroup"
+      },
+      "params": {},
+      "expect": {
+        "chart_route": "wheeler",
+        "distribution_flag": "NON_NORMAL_RAW",
+        "gates": {
+          "normality": "warn"
+        },
+        "chart_type": "Xbar-R",
+        "frozen": true,
+        "ruleset_applied": "wheeler",
+        "rule_ids": {
+          "subset_of": [
+            "1"
+          ]
+        }
+      }
+    },
+    {
+      "id": "autocorrelated_ewma",
+      "path": "cases/spc/autocorrelated_ewma.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "chart_type": "EWMA",
+        "chart_route": "EWMA",
+        "gates": {
+          "autocorrelation": "warn",
+          "multimodal": "__absent__",
+          "normality": "__absent__",
+          "freeze": "ok"
+        },
+        "frozen": true,
+        "stopped": false
+      }
+    },
+    {
+      "id": "autocorrelated_cusum",
+      "path": "cases/spc/autocorrelated_ewma.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "autocorrelated_chart": "CUSUM"
+      },
+      "expect": {
+        "chart_type": "CUSUM",
+        "chart_route": "CUSUM",
+        "gates": {
+          "autocorrelation": "warn",
+          "multimodal": "__absent__",
+          "normality": "__absent__",
+          "freeze": "ok"
+        },
+        "frozen": true,
+        "stopped": false
+      }
+    },
+    {
+      "id": "multimodal_stop",
+      "path": "cases/spc/multimodal_stop.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC",
+        "Wheeler"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "stopped": true,
+        "frozen": false,
+        "gates": {
+          "multimodal": "stop",
+          "freeze": "blocked"
+        }
+      }
+    },
+    {
+      "id": "gap_short_locf",
+      "path": "cases/cleaning/gap_short_locf.csv",
+      "entry": "classify_missing",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "reasons": "reason"
+      },
+      "params": {},
+      "expect": {
+        "flag_counts": {
+          "IMPUTED_LOCF": 2
+        },
+        "n_usable": {
+          "gte": 38
+        }
+      }
+    },
+    {
+      "id": "gap_long_hold",
+      "path": "cases/cleaning/gap_long_hold.csv",
+      "entry": "classify_missing",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "reasons": "reason"
+      },
+      "params": {},
+      "expect": {
+        "flag_counts": {
+          "MISSING_SENSOR": 5
+        },
+        "n_unusable": {
+          "gte": 5
+        }
+      }
+    },
+    {
+      "id": "reason_maintenance",
+      "path": "cases/cleaning/reason_maintenance.csv",
+      "entry": "classify_missing",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "reasons": "reason"
+      },
+      "params": {},
+      "expect": {
+        "flag_counts": {
+          "EXCLUDED_MAINTENANCE": 1
+        }
+      }
+    },
+    {
+      "id": "reason_human",
+      "path": "cases/cleaning/reason_human.csv",
+      "entry": "classify_missing",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "reasons": "reason"
+      },
+      "params": {},
+      "expect": {
+        "flag_counts": {
+          "MISSING_HUMAN": 1
+        }
+      }
+    },
+    {
+      "id": "reason_backup",
+      "path": "cases/cleaning/reason_backup.csv",
+      "entry": "classify_missing",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "reasons": "reason"
+      },
+      "params": {},
+      "expect": {
+        "flag_counts": {
+          "RESTORED_FROM_BACKUP": 1
+        }
+      }
+    },
+    {
+      "id": "reason_incomplete",
+      "path": "cases/cleaning/reason_incomplete.csv",
+      "entry": "classify_missing",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "reasons": "reason"
+      },
+      "params": {},
+      "expect": {
+        "flag_counts": {
+          "EXCLUDED_INCOMPLETE": 1
+        }
+      }
+    },
+    {
+      "id": "sensor_sentinel_range",
+      "path": "cases/cleaning/sensor_sentinel_range.csv",
+      "entry": "range_check",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "low": 0.0,
+        "high": 200.0
+      },
+      "expect": {
+        "n_invalid": 2
+      }
+    },
+    {
+      "id": "sensor_sentinel_establish",
+      "path": "cases/cleaning/sensor_sentinel_long.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "valid_range": [
+          0.0,
+          200.0
+        ]
+      },
+      "expect": {
+        "gates": {
+          "range": "warn",
+          "missing": "warn",
+          "normality": "ok"
+        },
+        "chart_route": "shewhart",
+        "distribution_flag": "NORMAL",
+        "rule_ids": {
+          "excludes": [
+            "1"
+          ]
+        },
+        "frozen": true,
+        "stopped": false,
+        "notes": "The whole point of range_check, asserted through the pipeline rather than in isolation. Without valid_range the two -999 sentinels both fire Nelson rule 1 AND drag the distribution to non-normal, diverting the study to the Wheeler route. With it they are reclassified MISSING_SENSOR and never reach the chart."
+      }
+    },
+    {
+      "id": "gap_short_locf_establish",
+      "path": "cases/cleaning/gap_short_locf.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "missing_reasons": "reason"
+      },
+      "params": {},
+      "expect": {
+        "gates": {
+          "missing": "ok",
+          "freeze": "ok"
+        },
+        "n_plotted": 40,
+        "frozen": true,
+        "stopped": false,
+        "notes": "Short gap: LOCF-filled points are usable, so all 40 points reach the chart and the missing gate stays ok. Pairs with gap_long_hold_establish."
+      }
+    },
+    {
+      "id": "gap_long_hold_establish",
+      "path": "cases/cleaning/gap_long_hold.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "missing_reasons": "reason"
+      },
+      "params": {},
+      "expect": {
+        "gates": {
+          "missing": "warn",
+          "freeze": "ok"
+        },
+        "n_plotted": 35,
+        "frozen": true,
+        "stopped": false,
+        "notes": "Long gap: the 5 missing points are held as MISSING_SENSOR, excluded from chart math (35 of 40 plotted) and the missing gate warns. This is the 'no silent imputation' contract."
+      }
+    },
+    {
+      "id": "incomplete_subgroup_keep",
+      "path": "cases/spc/incomplete_subgroup.csv",
+      "entry": "analyze_control_chart",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "subgroup_ids": "subgroup"
+      },
+      "params": {
+        "chart_type": "Xbar-R",
+        "exclude_incomplete": false
+      },
+      "expect": {
+        "chart_type": "Xbar-R",
+        "n_plotted": 25
+      }
+    },
+    {
+      "id": "incomplete_subgroup_exclude",
+      "path": "cases/spc/incomplete_subgroup.csv",
+      "entry": "analyze_control_chart",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement",
+        "subgroup_ids": "subgroup"
+      },
+      "params": {
+        "chart_type": "Xbar-R",
+        "exclude_incomplete": true
+      },
+      "expect": {
+        "chart_type": "Xbar-R",
+        "n_plotted": 24
+      }
+    },
+    {
+      "id": "empty_series",
+      "path": "cases/spc/empty_series.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "raises": "ValueError",
+        "raises_match": "requires at least 2 observations",
+        "notes": "raises_match guards against regressing to the old failure mode, where this crashed inside scipy.stats.boxcox with 'not enough values to unpack'."
+      }
+    },
+    {
+      "id": "all_nan",
+      "path": "cases/spc/all_nan.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "raises": "ValueError",
+        "raises_match": "usable observations"
+      }
+    },
+    {
+      "id": "constant_series",
+      "path": "cases/spc/constant_series.csv",
+      "entry": "ewma_chart",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {},
+      "expect": {
+        "raises": "ValueError",
+        "raises_match": "positive process sigma"
+      }
+    },
+    {
+      "id": "p_zero_n",
+      "path": "cases/spc/p_zero_n.csv",
+      "entry": "analyze_control_chart",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "defective",
+        "sample_sizes": "inspected"
+      },
+      "params": {
+        "chart_type": "P"
+      },
+      "expect": {
+        "raises": "ValueError",
+        "raises_match": "P chart sample sizes must be > 0"
+      }
+    },
+    {
+      "id": "u_zero_opportunity",
+      "path": "cases/spc/u_zero_opportunity.csv",
+      "entry": "analyze_control_chart",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "defects",
+        "opportunities": "units"
+      },
+      "params": {
+        "chart_type": "U"
+      },
+      "expect": {
+        "raises": "ValueError",
+        "raises_match": "U chart opportunities must be > 0"
+      }
+    },
+    {
+      "id": "gage_rr_excellent",
+      "path": "cases/msa/gage_rr_excellent.csv",
+      "entry": "gage_rr_anova",
+      "standards": [
+        "AIAG_MSA4"
+      ],
+      "columns": {},
+      "params": {
+        "tolerance": 10.0
+      },
+      "expect": {
+        "grr_percent": {
+          "lt": 10
+        },
+        "ndc_ok": true
+      }
+    },
+    {
+      "id": "gage_rr_marginal",
+      "path": "cases/msa/gage_rr_marginal.csv",
+      "entry": "gage_rr_anova",
+      "standards": [
+        "AIAG_MSA4"
+      ],
+      "columns": {},
+      "params": {
+        "tolerance": 10.0
+      },
+      "expect": {
+        "grr_percent": {
+          "gte": 10,
+          "lte": 30
+        }
+      }
+    },
+    {
+      "id": "gage_rr_poor",
+      "path": "cases/msa/gage_rr_poor.csv",
+      "entry": "gage_rr_anova",
+      "standards": [
+        "AIAG_MSA4"
+      ],
+      "columns": {},
+      "params": {
+        "tolerance": 10.0
+      },
+      "expect": {
+        "grr_percent": {
+          "gt": 30
+        }
+      }
+    },
+    {
+      "id": "gage_rr_unbalanced",
+      "path": "cases/msa/gage_rr_unbalanced.csv",
+      "entry": "gage_rr_anova",
+      "standards": [
+        "AIAG_MSA4"
+      ],
+      "columns": {},
+      "params": {
+        "tolerance": 10.0
+      },
+      "expect": {
+        "anova_fallback": true
+      }
+    },
+    {
+      "id": "ndc_fail",
+      "path": "cases/msa/ndc_fail.csv",
+      "entry": "gage_rr_anova",
+      "standards": [
+        "AIAG_MSA4"
+      ],
+      "columns": {},
+      "params": {
+        "tolerance": 10.0
+      },
+      "expect": {
+        "ndc": {
+          "lt": 5
+        },
+        "ndc_ok": false
+      }
+    },
+    {
+      "id": "gage_rr_poor_establish",
+      "path": "cases/msa/gage_rr_poor.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_MSA4",
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "Measurement",
+        "msa_parts": "Part",
+        "msa_operators": "Operator",
+        "msa_measurements": "Measurement"
+      },
+      "params": {
+        "msa_tolerance": 10.0
+      },
+      "expect": {
+        "stopped": true,
+        "frozen": false,
+        "gates": {
+          "msa": "stop",
+          "freeze": "blocked"
+        }
+      }
+    },
+    {
+      "id": "gage_resolution_fail",
+      "path": "cases/msa/gage_rr_excellent.csv",
+      "entry": "gage_resolution_gate",
+      "standards": [
+        "AIAG_MSA4"
+      ],
+      "columns": {},
+      "params": {
+        "resolution": 2.0,
+        "tolerance": 10.0
+      },
+      "expect": {
+        "ok": false
+      }
+    },
+    {
+      "id": "bias_significant",
+      "path": "cases/msa/bias_significant.csv",
+      "entry": "bias_study",
+      "standards": [
+        "AIAG_MSA4"
+      ],
+      "columns": {},
+      "params": {},
+      "expect": {
+        "is_significant": true,
+        "mean_bias": {
+          "gt": 0.5
+        }
+      }
+    },
+    {
+      "id": "linearity_ok",
+      "path": "cases/msa/linearity_ok.csv",
+      "entry": "linearity_study",
+      "standards": [
+        "AIAG_MSA4"
+      ],
+      "columns": {},
+      "params": {},
+      "expect": {
+        "is_linear": true
+      }
+    },
+    {
+      "id": "stability_ok",
+      "path": "cases/msa/stability_ok.csv",
+      "entry": "stability_study",
+      "standards": [
+        "AIAG_MSA4"
+      ],
+      "columns": {},
+      "params": {},
+      "expect": {
+        "is_stable": true
+      }
+    },
+    {
+      "id": "cap_excellent",
+      "path": "cases/capability/cap_excellent.csv",
+      "entry": "capability_analysis",
+      "standards": [
+        "SixSigma"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "usl": 10.5,
+        "lsl": 9.5
+      },
+      "expect": {
+        "cpk": {
+          "gte": 1.33
+        },
+        "method": "parametric"
+      }
+    },
+    {
+      "id": "cap_off_center",
+      "path": "cases/capability/cap_off_center.csv",
+      "entry": "capability_analysis",
+      "standards": [
+        "SixSigma"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "usl": 10.5,
+        "lsl": 9.5
+      },
+      "expect": {
+        "cpk_lt_cp": true,
+        "cpk": {
+          "lt": 1.33
+        },
+        "notes": "Off-centre means Cpk is penalised relative to Cp. Asserted as a relation plus a standard capability threshold, not as a hardcoded observed float."
+      }
+    },
+    {
+      "id": "cap_high_variation",
+      "path": "cases/capability/cap_high_variation.csv",
+      "entry": "capability_analysis",
+      "standards": [
+        "SixSigma"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "usl": 10.5,
+        "lsl": 9.5
+      },
+      "expect": {
+        "cpk": {
+          "lt": 1.0
+        }
+      }
+    },
+    {
+      "id": "cap_skewed",
+      "path": "cases/capability/cap_skewed.csv",
+      "entry": "capability_analysis",
+      "standards": [
+        "SixSigma"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "usl": 20.0,
+        "lsl": 5.0
+      },
+      "expect": {
+        "method": "transformed"
+      }
+    },
+    {
+      "id": "too_few_points_n10",
+      "path": "cases/spc/too_few_points_n10.csv",
+      "entry": "establish",
+      "standards": [
+        "AIAG_SPC"
+      ],
+      "columns": {
+        "values": "measurement"
+      },
+      "params": {
+        "min_subgroups": 25
+      },
+      "expect": {
+        "checklist_items": {
+          "min_subgroups": false
+        },
+        "checklist_passed": false
+      }
+    }
+  ]
+}

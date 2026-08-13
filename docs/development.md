@@ -31,9 +31,10 @@ uv lock
 | `services/` | stream-engine, mqtt-bridge |
 | `sample_data/` | Deterministic synthetic datasets |
 | `resilience_data/` | Standards-mapped sad/happy path corpus |
+| `combinatorial/` | Finite batch + in-process Phase II matrix |
 | `benchmarks/` | Performance + accuracy harnesses |
 | `frontend/` | Next.js operator UI |
-| `tests/` | unit + integration + resilience |
+| `tests/` | unit + integration + resilience + combinatorial |
 | `docs/` | This documentation |
 | `deploy/` | Docker + Compose |
 | `migrations/` | Alembic |
@@ -42,10 +43,16 @@ uv lock
 
 ```bash
 # Prefer disabling ROS/launch pytest plugins if present on the machine
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q -m "not integration"
 
-# Frontend
+# Combinatorial matrix (sparse; exhaustive is local)
+python -m combinatorial run --mode sparse
+
+# Frontend unit tests
 cd frontend && npm test
+
+# Playwright operator-console e2e (Compose UI+API must be up)
+cd frontend && E2E_USERNAME=admin E2E_PASSWORD='…' npm run test:e2e
 ```
 
 Notes:
@@ -53,6 +60,8 @@ Notes:
 - Unit tests use in-memory `sample_data` via `dataset` / `write_dataset` fixtures ([`tests/conftest.py`](../tests/conftest.py)) — **no committed CSVs**.
 - Hypothesis property tests live under `tests/unit/test_hypothesis_limits.py`.
 - Integration tests that need Timescale/Redis skip unless `ASPC_TIMESCALE_DSN` / `ASPC_REDIS_URL` are set (`tests/integration/test_realtime_gated.py`).
+- Combinatorial reports: `combinatorial/out/JUDGMENT.md`, `COVERAGE.json`, `ENGINE_BEHAVIOR_REPORT.md`.
+- Playwright setup logs in once (`e2e/auth.setup.ts`); `e2e/.auth/` is gitignored. `home.spec.ts` still skips if `:3000` is down; other e2e specs fail if the stack is unreachable.
 
 Acceptance-style smoke (also in CI):
 
@@ -77,7 +86,7 @@ PY
 Configured in [`pyproject.toml`](../pyproject.toml):
 
 ```bash
-ruff check spc_core adapters apps services sample_data resilience_data scripts tests benchmarks
+ruff check spc_core adapters apps services sample_data resilience_data combinatorial scripts tests benchmarks
 mypy spc_core   # tool.mypy.packages = ["spc_core"] only
 ```
 
@@ -110,7 +119,7 @@ Catalog names include `spc_individual_in_control`, `msa_gage_rr_excellent`, `cap
 
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml):
 
-1. **python** (3.11 / 3.12) — `uv pip install -e ".[dev]"`, blocking ruff, mypy `spc_core`, pytest (`not integration`, includes `tests/resilience`), `benchmarks/accuracy.py`, acceptance script
+1. **python** (3.11 / 3.12) — `uv pip install -e ".[dev]"`, blocking ruff (includes `combinatorial`), mypy `spc_core`, pytest (`not integration`, includes `tests/resilience` + `tests/combinatorial`), resilience report, sparse `python -m combinatorial run` (`continue-on-error`), `benchmarks/accuracy.py`, acceptance script
 2. **integration** — Timescale + Redis services; `tests/integration`
 3. **frontend** — npm ci/lint/test/build
 4. **docker** — build API + frontend images

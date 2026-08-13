@@ -37,10 +37,12 @@ apps = [
     "requests>=2.31",
     "python-jose[cryptography]>=3.3",
     "passlib[bcrypt]>=1.7",
+    "bcrypt>=4.0",
     "slowapi>=0.1.9",
     "structlog>=24.1",
     "prometheus-client>=0.20",
     "redis>=5.0",
+    "openpyxl>=3.1",
 ]
 stream = [
     "aiokafka>=0.10",
@@ -64,6 +66,7 @@ dev = [
     "requests>=2.31",
     "python-jose[cryptography]>=3.3",
     "passlib[bcrypt]>=1.7",
+    "bcrypt>=4.0",
     "slowapi>=0.1.9",
     "structlog>=24.1",
     "prometheus-client>=0.20",
@@ -131,6 +134,7 @@ ignore = ["E501", "UP042", "B905"]
 
 [tool.ruff.lint.per-file-ignores]
 "apps/api/main.py" = ["B008"]
+"apps/api/deps.py" = ["B008"]
 "apps/cli/main.py" = ["B008"]
 "adapters/persistence_tsdb.py" = ["E402"]
 "tests/**" = ["E402", "B011", "B017", "E731"]

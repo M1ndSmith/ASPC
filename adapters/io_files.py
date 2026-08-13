@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import csv
 import re
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -101,7 +102,7 @@ def save_upload(content: bytes, dest_dir: str | Path, filename: str,
             raise FileReadError(f"Extension '{ext}' not allowed. Allowed: {allowed_extensions}")
     if max_bytes is not None and len(content) > max_bytes:
         raise FileReadError(f"File exceeds max size ({max_bytes} bytes)")
-    target = dest / name
+    target = dest / f"{uuid.uuid4().hex}_{name}"
     target.write_bytes(content)
     return target
 
@@ -124,7 +125,7 @@ def save_upload_stream(
         if ext not in {e.lower() if e.startswith(".") else f".{e.lower()}"
                        for e in allowed_extensions}:
             raise FileReadError(f"Extension '{ext}' not allowed. Allowed: {allowed_extensions}")
-    target = dest / name
+    target = dest / f"{uuid.uuid4().hex}_{name}"
     written = 0
     try:
         with target.open("wb") as out:

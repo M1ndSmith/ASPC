@@ -156,7 +156,11 @@ class Phase2Evaluator:
         return self._engine.add(mean)
 
     def _observe_variable(self, value: float) -> list[Signal]:
-        """Per-point limits (P/U, variable-n Xbar, EWMA list limits)."""
+        """Per-point limits (P/U, variable-n Xbar, EWMA list limits).
+
+        Applies beyond-limits (Nelson 1), run-of-9 (Nelson 2), and zone-style
+        rules when a local sigma can be inferred from UCL−CL (≈ 3σ).
+        """
         comp = self.limits.primary
         i = self._i
         if isinstance(comp.ucl, list):
@@ -194,6 +198,53 @@ class Phase2Evaluator:
                 value=float(value),
                 description="Nine points in a row on the same side of the center line",
             ))
+
+        # Infer local sigma from half the control band when available.
+        sigma = None
+        if ucl is not None and comp.center is not None:
+            sigma = abs(float(ucl) - float(comp.center)) / 3.0
+        elif lcl is not None and comp.center is not None:
+            sigma = abs(float(comp.center) - float(lcl)) / 3.0
+        if sigma and sigma > 0 and self.ruleset != "wheeler":
+            z = (float(value) - float(comp.center)) / sigma
+            # Track zone A (beyond 2σ) runs for Nelson 5/6 approximations.
+            in_zone_a = abs(z) >= 2.0
+            prev_zone = getattr(self, "_zone_a_run", 0)
+            prev_zone_side = getattr(self, "_zone_a_side", 0)
+            zone_side = 1 if z > 0 else -1 if z < 0 else 0
+            if in_zone_a and zone_side == prev_zone_side and zone_side != 0:
+                self._zone_a_run = prev_zone + 1
+            else:
+                self._zone_a_run = 1 if in_zone_a else 0
+            self._zone_a_side = zone_side if in_zone_a else 0
+            # Nelson 5: 2 of 3 beyond 2σ on same side — approximate with consecutive zone A.
+            if self._zone_a_run >= 2:
+                out.append(Signal(
+                    rule_id="5",
+                    rule_name="Two of three beyond 2 sigma",
+                    index=i,
+                    value=float(value),
+                    description="Two consecutive points beyond 2σ from center (variable limits)",
+                    side="upper" if zone_side > 0 else "lower",
+                ))
+            # Nelson 6: 4 of 5 beyond 1σ — track with _zone_b_run
+            in_zone_b = abs(z) >= 1.0
+            prev_b = getattr(self, "_zone_b_run", 0)
+            prev_b_side = getattr(self, "_zone_b_side", 0)
+            if in_zone_b and zone_side == prev_b_side and zone_side != 0:
+                self._zone_b_run = prev_b + 1
+            else:
+                self._zone_b_run = 1 if in_zone_b else 0
+            self._zone_b_side = zone_side if in_zone_b else 0
+            if self._zone_b_run >= 4:
+                out.append(Signal(
+                    rule_id="6",
+                    rule_name="Four of five beyond 1 sigma",
+                    index=i,
+                    value=float(value),
+                    description="Four consecutive points beyond 1σ from center (variable limits)",
+                    side="upper" if zone_side > 0 else "lower",
+                ))
         return out
 
     def _observe_ewma(self, value: float) -> list[Signal]:

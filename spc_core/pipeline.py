@@ -277,6 +277,14 @@ def establish(
             if transform.became_normal:
                 clean = transform.values
                 working = transform.values
+                # Transform may drop NaNs / change length — clear parallel
+                # subgroup metadata so analyze_control_chart lengths match.
+                if subgroup_ids is not None and len(subgroup_ids) != len(clean):
+                    subgroup_ids = None
+                if sample_sizes is not None and len(sample_sizes) != len(clean):
+                    sample_sizes = None
+                if opportunities is not None and len(opportunities) != len(clean):
+                    opportunities = None
                 dist_flag = DistributionFlag.TRANSFORMED
                 transform_applied = transform.label
                 gates.append(Gate(

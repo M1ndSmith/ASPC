@@ -1,0 +1,6 @@
+# Combinatorial dual-mode test matrix for spc_core
+mode: sparse  # sparse | exhaustive
+seed: 42
+max_sparse_cases: 80
+adversarial: true
+output_dir: combinatorial/out

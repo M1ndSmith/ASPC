@@ -26,6 +26,8 @@ Go-live is gated by `phase1_checklist()` (10 items). Streams register and activa
 | Doc | Audience | Contents |
 |-----|----------|----------|
 | [overview/problem-and-solution.md](overview/problem-and-solution.md) | Decision-makers & practitioners | Problem, solution, architecture diagrams |
+| [architecture.md](architecture.md) | Developers & architects | Structural scan: layers, folders, config, request flows |
+| [overview/health-and-roadmap.md](overview/health-and-roadmap.md) | Technical leads & product | Health insights, quick wins, 10x / enterprise roadmap |
 | [overview/capabilities.md](overview/capabilities.md) | Practitioners & developers | Statistical + operational capabilities |
 | [overview/use-cases.md](overview/use-cases.md) | Integrators | Stamping / pharma / molding patterns |
 | [overview/benchmarking.md](overview/benchmarking.md) | Technical leads | Performance, accuracy, resilience evidence |
@@ -36,7 +38,9 @@ Go-live is gated by `phase1_checklist()` (10 items). Streams register and activa
 | [python-api.md](python-api.md) | Developers | Library imports and snippets |
 | [configuration.md](configuration.md) | Operators & DevOps | YAML + `ASPC_*` env overrides |
 | [deployment.md](deployment.md) | DevOps | Docker Compose, migrations, services |
-| [development.md](development.md) | Contributors | uv, tests, CI, `sample_data`, benchmarks |
+| [development.md](development.md) | Contributors | uv, tests, CI, `sample_data`, combinatorial, Playwright |
+| [resilience_data/README.md](../resilience_data/README.md) | Contributors | Standards-mapped judgment corpus |
+| [combinatorial/out/ENGINE_BEHAVIOR_REPORT.md](../combinatorial/out/ENGINE_BEHAVIOR_REPORT.md) | Contributors | Observed `spc_core` behavior from the matrix |
 
 ## Quick links
 
