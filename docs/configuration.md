@@ -16,7 +16,7 @@ Application config is YAML defaults merged with environment overrides. Sources:
 |-----|---------|---------|
 | `host` | `0.0.0.0` | Bind address |
 | `port` | `8000` | HTTP port |
-| `cors_origins` | `["http://localhost:3000", "http://127.0.0.1:3000"]` | CORS allow list |
+| `cors_origins` | `["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"]` | CORS allow list |
 
 ### `auth`
 

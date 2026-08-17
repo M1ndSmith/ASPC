@@ -6,15 +6,15 @@ import type {
   TokenResponse,
 } from "./types";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "/backend").replace(/\/$/, "");
 const TOKEN_KEY = "aspc_token";
 
 function unreachableApiHint(err: unknown): string {
   if (!(err instanceof TypeError)) return "";
   return (
     " — browser could not complete the request. " +
-    `Tried ${API_URL}. Prefer same-origin NEXT_PUBLIC_API_URL=/backend (Compose default). ` +
-    "Or open http://localhost:3000 and ensure ASPC_CORS_ORIGINS includes your UI origin."
+    `Tried ${API_URL}. Same-origin /backend is rewritten to the API (default http://127.0.0.1:8000). ` +
+    "Start the API on :8000, or set ASPC_API_PROXY_TARGET. Direct :8000 calls need ASPC_CORS_ORIGINS to include this UI origin."
   );
 }
 
@@ -155,6 +155,13 @@ export const api = {
   analyzeCapability: (form: FormData) => upload("/analyze/capability", form),
 
   analyzeMsa: (form: FormData) => upload("/analyze/msa", form),
+
+  analyzeMsaContinuous: (body: { measured: number[]; reference: number[]; tolerance: number }) =>
+    request<{ summary: Record<string, unknown> }>("/analyze/msa-continuous", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
 
   /** Optional — returns empty list if the streams endpoint is unavailable. */
   listStreams: async (): Promise<{ streams: StreamInfo[] }> => {

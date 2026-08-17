@@ -178,7 +178,7 @@ Server-side CSV replay against frozen limits; emits SSE `data:` lines of `Signal
 
 ## CORS
 
-Configured via `api.cors_origins` / `ASPC_CORS_ORIGINS` (comma-separated). Compose `.env.example` allows both `http://localhost:3000` and `http://127.0.0.1:3000`.
+Configured via `api.cors_origins` / `ASPC_CORS_ORIGINS` (comma-separated). Compose `.env.example` allows `http://localhost:3000`, `http://127.0.0.1:3000`, and the same hosts on `:3001` (Next falls back to 3001 when 3000 is taken).
 
 The operator UI talks to the API via same-origin **`/backend/*`** (Next.js rewrite to the API). Browsers on `:3000` do not need a cross-origin call to `:8000`. Direct `curl` to `:8000` still works.
 

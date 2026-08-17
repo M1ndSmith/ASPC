@@ -29,7 +29,7 @@ Infra ports (Redpanda, Mosquitto, Timescale, Redis, Grafana) bind to **loopback 
 Secrets come from `deploy/compose/.env` (never commit real values):
 
 - `POSTGRES_PASSWORD`, `ASPC_JWT_SECRET`, `ASPC_API_KEYS`, `ASPC_ADMIN_PASSWORD`
-- `ASPC_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000`
+- `ASPC_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001`
 - `ASPC_TSDB_INIT=0` on api/stream-engine so only the migrate service applies schema
 - `PYTHONPATH=/app` on the API container so `/lab/cases` can import `resilience_data`
 

@@ -2,12 +2,16 @@
 
 import { FormEvent, useState } from "react";
 import {
+  Button,
+  DataTable,
   ErrorBanner,
   FileField,
+  JsonBlock,
   PageHeader,
   Panel,
-  PrimaryButton,
   Spinner,
+  Td,
+  Term,
   TextInput,
 } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
@@ -55,7 +59,11 @@ export default function CapabilityPage() {
       <PageHeader
         title="Capability Study"
         hideTitle
-        subtitle="Cp / Cpk / Pp / Ppk against specification limits"
+        subtitle={
+          <>
+            <Term k="cp" />, <Term k="cpk" />, <Term k="pp" />, and <Term k="ppk" /> against specification limits
+          </>
+        }
       />
 
       {error && <ErrorBanner message={error} />}
@@ -92,9 +100,9 @@ export default function CapabilityPage() {
             onChange={(e) => setTarget(e.target.value)}
           />
           <div className="flex items-end gap-3">
-            <PrimaryButton type="submit" disabled={busy || !file}>
+            <Button type="submit" disabled={busy || !file} tip="Check whether the process stays inside specification.">
               {busy ? "Computing…" : "Run capability"}
-            </PrimaryButton>
+            </Button>
             {busy && <Spinner />}
           </div>
         </form>
@@ -107,32 +115,22 @@ export default function CapabilityPage() {
             <span className="font-mono text-aspc-accent">{result.run_id}</span>
           </div>
           {cap ? (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[20rem] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-aspc-border text-[11px] uppercase tracking-wider text-aspc-muted">
-                    <th className="pb-2 pr-4 font-medium">Index</th>
-                    <th className="pb-2 font-medium">Value</th>
+            <DataTable headers={["Index", "Value"]}>
+              {["cp", "cpk", "pp", "ppk", "sigma_level", "method"].map((k) =>
+                cap[k] !== undefined && cap[k] !== null ? (
+                  <tr key={k}>
+                    <Td className="font-mono uppercase text-aspc-muted">
+                      {k === "cp" || k === "cpk" || k === "pp" || k === "ppk" ? <Term k={k} /> : k}
+                    </Td>
+                    <Td className="font-mono text-lg text-aspc-accent">
+                      {typeof cap[k] === "number" ? (cap[k] as number).toFixed(4) : String(cap[k])}
+                    </Td>
                   </tr>
-                </thead>
-                <tbody>
-                  {["cp", "cpk", "pp", "ppk", "sigma_level", "method"].map((k) =>
-                    cap[k] !== undefined && cap[k] !== null ? (
-                      <tr key={k} className="border-b border-aspc-border/50">
-                        <td className="py-2.5 pr-4 font-mono uppercase text-aspc-muted">{k}</td>
-                        <td className="py-2.5 font-mono text-lg text-aspc-accent">
-                          {typeof cap[k] === "number" ? (cap[k] as number).toFixed(4) : String(cap[k])}
-                        </td>
-                      </tr>
-                    ) : null,
-                  )}
-                </tbody>
-              </table>
-            </div>
+                ) : null,
+              )}
+            </DataTable>
           ) : (
-            <pre className="max-h-96 overflow-auto rounded-2xl bg-aspc-elevated p-3 text-xs text-aspc-muted">
-              {JSON.stringify(result.report, null, 2)}
-            </pre>
+            <JsonBlock value={result.report} />
           )}
         </Panel>
       )}

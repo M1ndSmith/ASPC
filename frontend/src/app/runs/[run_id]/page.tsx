@@ -7,12 +7,22 @@ import { useQuery } from "@tanstack/react-query";
 import { Checklist } from "@/components/Checklist";
 import { ControlChart } from "@/components/ControlChart";
 import { GateList } from "@/components/GateList";
-import { ErrorBanner, PageHeader, Panel, PrimaryButton, Spinner, TextInput } from "@/components/ui";
+import { GoLivePanel } from "@/components/GoLivePanel";
+import {
+  Button,
+  DataTable,
+  ErrorBanner,
+  JsonBlock,
+  PageHeader,
+  Panel,
+  Spinner,
+  Td,
+  Term,
+  TextInput,
+} from "@/components/ui";
 import { ApiError, api, getToken, reportUrl } from "@/lib/api";
 import { formatLimits, formatTimestamp, shortId } from "@/lib/format";
 import type { Gate, Phase1Checklist, SPCReport } from "@/lib/types";
-
-const API_KEY_STORAGE = "aspc_api_key";
 
 function asSpcReport(raw: unknown): SPCReport | null {
   if (!raw || typeof raw !== "object") return null;
@@ -25,10 +35,6 @@ export default function RunDetailPage() {
   const router = useRouter();
   const runId = String(params.run_id ?? "");
   const [streamKey, setStreamKey] = useState("line-1");
-  const [apiKey, setApiKey] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem(API_KEY_STORAGE) || "" : "",
-  );
-  const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [diffOther, setDiffOther] = useState("");
   const [diffResult, setDiffResult] = useState<Record<string, unknown> | null>(null);
@@ -40,9 +46,7 @@ export default function RunDetailPage() {
   });
 
   const report = data ? asSpcReport(data.report) : null;
-  const primary = report?.limits?.components
-    ? Object.values(report.limits.components)[0]
-    : null;
+  const primary = report?.limits?.components ? Object.values(report.limits.components)[0] : null;
   const oocIndices = report?.signals?.map((s) => s.index) ?? [];
   const gates = (report?.gates ?? (data?.report as { gates?: Gate[] })?.gates) as Gate[] | undefined;
   const checklist = (report?.checklist ??
@@ -58,27 +62,6 @@ export default function RunDetailPage() {
     data?.report && typeof data.report === "object" && "result" in data.report
       ? (data.report as { study_type?: string; result: Record<string, unknown> })
       : null;
-
-  async function goLive() {
-    if (!limitsVersion || !apiKey) {
-      setActionError("Limits version and API key required");
-      return;
-    }
-    setBusy(true);
-    setActionError(null);
-    try {
-      localStorage.setItem(API_KEY_STORAGE, apiKey);
-      await api.registerStream({ stream_key: streamKey }, apiKey);
-      await api.goLive(streamKey, { limits_version: limitsVersion }, apiKey);
-      router.push(
-        `/live?stream=${encodeURIComponent(streamKey)}&limits=${encodeURIComponent(limitsVersion)}`,
-      );
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : (err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function runDiff() {
     if (!limitsVersion || !diffOther) return;
@@ -111,6 +94,10 @@ export default function RunDetailPage() {
     })();
   }
 
+  function goToLive(key: string, limits: string) {
+    router.push(`/live?stream=${encodeURIComponent(key)}&limits=${encodeURIComponent(limits)}`);
+  }
+
   return (
     <div>
       <PageHeader
@@ -118,11 +105,8 @@ export default function RunDetailPage() {
         hideTitle
         subtitle={runId ? shortId(runId, 20) : "—"}
         actions={
-          <Link
-            href="/runs"
-            className="rounded-pill border border-aspc-border px-3 py-1.5 text-xs text-aspc-muted hover:text-aspc-text"
-          >
-            ← All runs
+          <Link href="/runs">
+            <Button variant="secondary" tip="Go back to the full list of analyses.">All runs</Button>
           </Link>
         }
       />
@@ -153,7 +137,9 @@ export default function RunDetailPage() {
               </div>
               {limitsVersion && (
                 <div>
-                  <dt className="text-aspc-muted">Limits version</dt>
+                  <dt className="text-aspc-muted">
+                    <Term k="limits-version" />
+                  </dt>
                   <dd className="font-mono text-xs">{limitsVersion}</dd>
                 </div>
               )}
@@ -163,15 +149,15 @@ export default function RunDetailPage() {
                 href={reportUrl(runId)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-aspc-accent hover:underline"
+                className="text-sm font-bold uppercase tracking-wide text-aspc-accent hover:underline"
               >
-                Open HTML report ↗
+                Open HTML report
               </a>
               {report && (
                 <button
                   type="button"
                   onClick={exportXlsx}
-                  className="text-sm text-aspc-accent hover:underline"
+                  className="text-sm font-bold uppercase tracking-wide text-aspc-accent hover:underline"
                 >
                   Export Excel
                 </button>
@@ -180,28 +166,13 @@ export default function RunDetailPage() {
           </Panel>
 
           {limitsVersion && (
-            <Panel title="One-click go-live">
-              <div className="grid gap-4 md:grid-cols-3">
-                <TextInput
-                  id="rk"
-                  label="Stream key"
-                  value={streamKey}
-                  onChange={(e) => setStreamKey(e.target.value)}
-                />
-                <TextInput
-                  id="ak"
-                  label="X-API-Key"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                />
-                <div className="flex items-end">
-                  <PrimaryButton type="button" onClick={goLive} disabled={busy}>
-                    {busy ? "Activating…" : "Go live → Live"}
-                  </PrimaryButton>
-                </div>
-              </div>
-            </Panel>
+            <GoLivePanel
+              title="One-click go-live"
+              limitsVersion={limitsVersion}
+              streamKey={streamKey}
+              onStreamKeyChange={setStreamKey}
+              onSuccess={goToLive}
+            />
           )}
 
           {limitsVersion && (
@@ -214,15 +185,15 @@ export default function RunDetailPage() {
                   onChange={(e) => setDiffOther(e.target.value)}
                 />
                 <div className="flex items-end">
-                  <PrimaryButton type="button" onClick={runDiff} disabled={!diffOther}>
+                  <Button type="button" onClick={runDiff} disabled={!diffOther} tip="Show what changed between two locked limit versions.">
                     Diff
-                  </PrimaryButton>
+                  </Button>
                 </div>
               </div>
               {diffResult && (
-                <pre className="mt-4 overflow-x-auto rounded-2xl bg-aspc-elevated p-3 text-xs">
-                  {JSON.stringify(diffResult, null, 2)}
-                </pre>
+                <div className="mt-4">
+                  <JsonBlock value={diffResult} />
+                </div>
               )}
             </Panel>
           )}
@@ -251,68 +222,43 @@ export default function RunDetailPage() {
 
           {capResult && (
             <Panel title="Capability indices">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[20rem] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-aspc-border text-[11px] uppercase tracking-wider text-aspc-muted">
-                      <th className="pb-2 pr-4 font-medium">Index</th>
-                      <th className="pb-2 font-medium">Value</th>
+              <DataTable headers={["Index", "Value"]}>
+                {["cp", "cpk", "pp", "ppk", "sigma_level", "method"].map((k) =>
+                  capResult[k] !== undefined && capResult[k] !== null ? (
+                    <tr key={k}>
+                      <Td className="font-mono uppercase text-aspc-muted">{k}</Td>
+                      <Td className="font-mono text-aspc-accent">
+                        {typeof capResult[k] === "number"
+                          ? (capResult[k] as number).toFixed(4)
+                          : String(capResult[k])}
+                      </Td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {["cp", "cpk", "pp", "ppk", "sigma_level", "method"].map((k) =>
-                      capResult[k] !== undefined && capResult[k] !== null ? (
-                        <tr key={k} className="border-b border-aspc-border/50">
-                          <td className="py-2 pr-4 font-mono uppercase text-aspc-muted">{k}</td>
-                          <td className="py-2 font-mono text-aspc-accent">
-                            {typeof capResult[k] === "number"
-                              ? (capResult[k] as number).toFixed(4)
-                              : String(capResult[k])}
-                          </td>
-                        </tr>
-                      ) : null,
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  ) : null,
+                )}
+              </DataTable>
             </Panel>
           )}
 
           {msaResult?.result && (
             <Panel title={`MSA · ${msaResult.study_type ?? "study"}`}>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[24rem] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-aspc-border text-[11px] uppercase tracking-wider text-aspc-muted">
-                      <th className="pb-2 pr-4 font-medium">Metric</th>
-                      <th className="pb-2 font-medium">Value</th>
+              <DataTable headers={["Metric", "Value"]}>
+                {Object.entries(msaResult.result)
+                  .filter(
+                    ([, v]) => typeof v === "number" || typeof v === "string" || typeof v === "boolean",
+                  )
+                  .map(([k, v]) => (
+                    <tr key={k}>
+                      <Td className="font-mono text-aspc-muted">{k}</Td>
+                      <Td className="font-mono">{typeof v === "number" ? v.toFixed(4) : String(v)}</Td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(msaResult.result)
-                      .filter(
-                        ([, v]) =>
-                          typeof v === "number" || typeof v === "string" || typeof v === "boolean",
-                      )
-                      .map(([k, v]) => (
-                        <tr key={k} className="border-b border-aspc-border/50">
-                          <td className="py-2 pr-4 font-mono text-aspc-muted">{k}</td>
-                          <td className="py-2 font-mono">
-                            {typeof v === "number" ? v.toFixed(4) : String(v)}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+              </DataTable>
             </Panel>
           )}
 
           {!report && !capResult && !msaResult?.result && (
             <Panel title="Report JSON">
-              <pre className="max-h-[32rem] overflow-auto rounded-2xl bg-aspc-elevated p-3 text-xs text-aspc-muted">
-                {JSON.stringify(data.report, null, 2)}
-              </pre>
+              <JsonBlock value={data.report} maxHeight="32rem" />
             </Panel>
           )}
         </div>

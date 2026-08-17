@@ -2,25 +2,24 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ErrorBanner, PageHeader, Panel, PrimaryButton, Spinner } from "@/components/ui";
+import { Button, ErrorBanner, JsonBlock, PageHeader, Panel, Spinner } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 
 function ReachabilityHint({ message }: { message: string }) {
   if (!message.includes("Cannot reach API")) return null;
   return (
-    <div className="mb-4 rounded-2xl border border-aspc-border bg-aspc-elevated px-4 py-3 text-sm text-aspc-muted">
-      <p className="mb-2 font-medium text-aspc-fg">API unreachable from the browser</p>
+    <div className="mb-4 rounded-lg bg-aspc-elevated px-4 py-3 text-sm text-aspc-muted shadow-recessed">
+      <p className="mb-2 font-medium text-aspc-text">API unreachable from the browser</p>
       <ol className="list-decimal space-y-1 pl-5">
         <li>
-          Confirm API:{" "}
-          <code className="text-aspc-accent">curl -sS http://127.0.0.1:8000/health</code>
+          Confirm API: <code className="font-mono text-aspc-accent">curl -sS http://127.0.0.1:8000/health</code>
         </li>
         <li>
           Confirm UI proxy:{" "}
-          <code className="text-aspc-accent">curl -sS http://127.0.0.1:3000/backend/health</code>
+          <code className="font-mono text-aspc-accent">curl -sS http://127.0.0.1:3000/backend/health</code>
         </li>
         <li>
-          Compose should use <code className="text-aspc-accent">NEXT_PUBLIC_API_URL=/backend</code>{" "}
+          Compose should use <code className="font-mono text-aspc-accent">NEXT_PUBLIC_API_URL=/backend</code>{" "}
           (rebuild frontend after changing build args).
         </li>
         <li>Log in (Lab requires an authenticated analyst/admin session).</li>
@@ -65,11 +64,11 @@ export default function LabPage() {
       {casesQ.isLoading && <Spinner />}
 
       <Panel title="Cases" className="mb-6">
-        <ul className="max-h-[28rem] space-y-2 overflow-y-auto">
+        <ul className="max-h-96 space-y-2 overflow-y-auto">
           {(casesQ.data?.cases || []).map((c) => (
             <li
               key={c.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-aspc-border px-3 py-2"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-aspc-elevated px-3 py-2 shadow-recessed"
             >
               <div>
                 <div className="font-mono text-sm text-aspc-accent">{c.id}</div>
@@ -77,13 +76,9 @@ export default function LabPage() {
                   {c.category || "—"} · {c.description || c.entry || ""}
                 </div>
               </div>
-              <PrimaryButton
-                type="button"
-                onClick={() => runCase(c.id)}
-                disabled={running === c.id}
-              >
+              <Button type="button" onClick={() => runCase(c.id)} disabled={running === c.id} tip="Run this example and compare expected vs actual.">
                 {running === c.id ? "Running…" : "Run"}
-              </PrimaryButton>
+              </Button>
             </li>
           ))}
         </ul>
@@ -91,9 +86,7 @@ export default function LabPage() {
 
       {result && (
         <Panel title="Result">
-          <pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl bg-aspc-elevated p-4 text-xs">
-            {JSON.stringify(result, null, 2)}
-          </pre>
+          <JsonBlock value={result} />
         </Panel>
       )}
     </div>

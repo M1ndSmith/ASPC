@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { Activity } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ApiError, login } from "@/lib/api";
-import { ErrorBanner, PrimaryButton, TextInput } from "@/components/ui";
+import { Button, ErrorBanner, TextInput } from "@/components/ui";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,14 +29,12 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-aspc-bg px-4">
-      <div className="w-full max-w-md rounded-card border border-aspc-border bg-aspc-panel p-8 shadow-card">
+      <div className="w-full max-w-md rounded-xl bg-aspc-bg p-8 shadow-floating">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-aspc-accent text-aspc-bg shadow-glow">
-            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor">
-              <path d="M12 2a10 10 0 1 0 10 10h-4a6 6 0 1 1-6-6V2z" />
-            </svg>
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-aspc-accent text-white shadow-key">
+            <Activity className="h-7 w-7" strokeWidth={2} />
           </div>
-          <div className="text-2xl font-semibold tracking-wide text-aspc-accent">ASPC</div>
+          <div className="text-2xl font-extrabold tracking-wide text-aspc-text">ASPC</div>
           <h1 className="mt-3 text-xl font-semibold text-aspc-text">Sign in</h1>
           <p className="mt-1 text-sm text-aspc-muted">Operator console · JWT against the ASPC API</p>
         </div>
@@ -60,9 +59,9 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <PrimaryButton type="submit" disabled={busy} className="w-full">
+          <Button type="submit" disabled={busy} className="w-full" tip="Sign in with your ASPC username and password">
             {busy ? "Signing in…" : "Sign in"}
-          </PrimaryButton>
+          </Button>
         </form>
       </div>
     </div>

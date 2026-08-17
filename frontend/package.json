@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.66.0",
+    "lucide-react": "^1.31.0",
     "next": "^14.2.24",
     "plotly.js": "^2.35.3",
     "react": "^18.3.1",

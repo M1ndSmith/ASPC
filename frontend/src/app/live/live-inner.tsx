@@ -4,14 +4,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { ControlChart } from "@/components/ControlChart";
-import { ErrorBanner, PageHeader, Panel, PrimaryButton, SelectInput, Spinner } from "@/components/ui";
+import { GoLivePanel } from "@/components/GoLivePanel";
+import {
+  Button,
+  ErrorBanner,
+  JsonBlock,
+  PageHeader,
+  Panel,
+  SelectInput,
+  Spinner,
+  Term,
+  TextInput,
+} from "@/components/ui";
 import { api, getToken } from "@/lib/api";
 import { formatTimestamp } from "@/lib/format";
 import type { LivePointMessage, Signal } from "@/lib/types";
 import { connectLiveSocket, type LiveSocketHandle } from "@/lib/ws";
 
 const MAX_POINTS = 200;
-const API_KEY_STORAGE = "aspc_api_key";
 
 interface AlertItem extends Signal {
   ts?: string;
@@ -37,11 +47,7 @@ export default function LivePageInner() {
   const [cl, setCl] = useState<number>(0);
   const [lcl, setLcl] = useState<number>(0);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
-  const [apiKey, setApiKey] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem(API_KEY_STORAGE) || "" : "",
-  );
   const [limitsVersion, setLimitsVersion] = useState(search.get("limits") || "");
-  const [goLiveBusy, setGoLiveBusy] = useState(false);
   const [explain, setExplain] = useState<Record<string, unknown> | null>(null);
   const [sensorHealth, setSensorHealth] = useState<{
     window?: number;
@@ -146,25 +152,6 @@ export default function LivePageInner() {
     sockRef.current = handle;
   }
 
-  async function onGoLive() {
-    if (!activeKey || !limitsVersion || !apiKey) {
-      setError("Stream key, limits version, and API key are required to go live");
-      return;
-    }
-    setGoLiveBusy(true);
-    setError(null);
-    try {
-      localStorage.setItem(API_KEY_STORAGE, apiKey);
-      await api.registerStream({ stream_key: activeKey }, apiKey);
-      await api.goLive(activeKey, { limits_version: limitsVersion }, apiKey);
-      await streamsQ.refetch();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setGoLiveBusy(false);
-    }
-  }
-
   async function openExplain(a: AlertItem) {
     try {
       const body = await api.explain({
@@ -198,13 +185,15 @@ export default function LivePageInner() {
       <PageHeader
         title="Live Monitoring"
         hideTitle
-        subtitle="Phase II stream against frozen limits — WebSocket chart + alert feed"
+        subtitle={
+          <>
+            <Term k="phase-ii" /> stream against frozen limits — WebSocket chart + alert feed
+          </>
+        }
         actions={
           <span
-            className={`rounded-pill border px-3 py-1 text-[10px] font-semibold uppercase tracking-wider ${
-              connected
-                ? "border-aspc-ok/40 bg-aspc-ok/15 text-aspc-ok"
-                : "border-aspc-border text-aspc-muted"
+            className={`rounded-pill px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+              connected ? "bg-aspc-ok/15 text-aspc-ok" : "bg-aspc-elevated text-aspc-muted"
             }`}
           >
             {connected ? "Connected" : "Disconnected"}
@@ -230,76 +219,38 @@ export default function LivePageInner() {
               </option>
             ))}
           </SelectInput>
-          <div>
-            <label
-              htmlFor="manual_key"
-              className="mb-1.5 block text-xs uppercase tracking-wider text-aspc-muted"
-            >
-              Stream key
-            </label>
-            <input
-              id="manual_key"
-              value={streamKey || manualKey}
-              disabled={!!streamKey}
-              onChange={(e) => setManualKey(e.target.value)}
-              className="w-full rounded-2xl border border-aspc-border bg-aspc-elevated px-3 py-2.5 text-sm outline-none focus:border-aspc-accent/50 disabled:opacity-50"
-            />
-          </div>
+          <TextInput
+            id="manual_key"
+            label="Stream key"
+            value={streamKey || manualKey}
+            disabled={!!streamKey}
+            onChange={(e) => setManualKey(e.target.value)}
+          />
           <div className="flex items-end gap-2">
-            <PrimaryButton onClick={connect} disabled={!activeKey}>
+            <Button onClick={connect} disabled={!activeKey} tip="Start receiving live measurements for this line.">
               Connect
-            </PrimaryButton>
-            <button
-              type="button"
-              onClick={disconnect}
-              className="rounded-pill border border-aspc-border px-4 py-2.5 text-sm text-aspc-muted hover:text-aspc-text"
-            >
+            </Button>
+            <Button variant="secondary" onClick={disconnect} tip="Stop the live feed. The line stays registered.">
               Disconnect
-            </button>
+            </Button>
           </div>
         </div>
       </Panel>
 
-      <Panel title="Go live" className="mb-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div>
-            <label
-              htmlFor="limits_version"
-              className="mb-1.5 block text-xs uppercase tracking-wider text-aspc-muted"
-            >
-              Frozen limits version
-            </label>
-            <input
-              id="limits_version"
-              value={limitsVersion}
-              onChange={(e) => setLimitsVersion(e.target.value)}
-              className="w-full rounded-2xl border border-aspc-border bg-aspc-elevated px-3 py-2.5 text-sm outline-none focus:border-aspc-accent/50"
-              placeholder="from Analyze result"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="api_key"
-              className="mb-1.5 block text-xs uppercase tracking-wider text-aspc-muted"
-            >
-              X-API-Key
-            </label>
-            <input
-              id="api_key"
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="w-full rounded-2xl border border-aspc-border bg-aspc-elevated px-3 py-2.5 text-sm outline-none focus:border-aspc-accent/50"
-              placeholder="stream mutation key"
-            />
-          </div>
-          <div className="flex items-end">
-            <PrimaryButton onClick={onGoLive} disabled={goLiveBusy || !activeKey}>
-              {goLiveBusy ? "Activating…" : "Register + go live"}
-            </PrimaryButton>
-          </div>
-        </div>
-      </Panel>
+      <div className="mb-6">
+        <GoLivePanel
+          limitsVersion={limitsVersion || undefined}
+          streamKey={activeKey}
+          onStreamKeyChange={(v) => {
+            setManualKey(v);
+            setStreamKey("");
+          }}
+          onLimitsChange={setLimitsVersion}
+          onSuccess={async () => {
+            await streamsQ.refetch();
+          }}
+        />
+      </div>
 
       {sensorHealth && (sensorHealth.window ?? 0) > 0 && (
         <Panel title="Sensor health" className="mb-6">
@@ -308,7 +259,7 @@ export default function LivePageInner() {
           </p>
           <div className="flex flex-wrap gap-3 text-sm">
             {Object.entries(healthRates).map(([k, v]) => (
-              <span key={k} className="rounded-pill border border-aspc-border px-3 py-1 font-mono">
+              <span key={k} className="rounded-pill bg-aspc-elevated px-3 py-1 font-mono shadow-recessed">
                 {k}: {(v * 100).toFixed(1)}%
               </span>
             ))}
@@ -332,27 +283,25 @@ export default function LivePageInner() {
         </div>
         <Panel title="Alert Feed">
           {alerts.length === 0 && <p className="text-sm text-aspc-muted">No alerts yet.</p>}
-          <ul className="max-h-[22rem] space-y-2 overflow-y-auto">
+          <ul className="max-h-96 space-y-2 overflow-y-auto">
             {alerts.map((a, i) => (
               <li
                 key={`${a.rule_id}-${a.index}-${i}`}
-                className="rounded-2xl border border-aspc-stop/30 bg-aspc-stop/10 px-3 py-2 text-sm"
+                className="rounded-md bg-aspc-accent-soft px-3 py-2 text-sm"
               >
-                <div className="font-mono text-xs text-aspc-stop">
+                <div className="font-mono text-xs text-aspc-accent">
                   [{a.rule_id}] idx {a.index}
                 </div>
                 <p className="mt-0.5 text-aspc-text">{a.description || a.rule_name}</p>
-                {a.explanation && (
-                  <p className="mt-1 text-[11px] text-aspc-muted">{a.explanation}</p>
-                )}
-                <div className="mt-1 flex items-center justify-between text-[11px] text-aspc-muted">
+                {a.explanation && <p className="mt-1 text-xs text-aspc-muted">{a.explanation}</p>}
+                <div className="mt-1 flex items-center justify-between text-xs text-aspc-muted">
                   <span>
                     value={a.value}
                     {a.ts ? ` · ${formatTimestamp(a.ts)}` : ""}
                   </span>
                   <button
                     type="button"
-                    className="text-aspc-accent hover:underline"
+                    className="font-bold uppercase tracking-wide text-aspc-accent hover:underline"
                     onClick={() => openExplain(a)}
                   >
                     Explain
@@ -367,16 +316,10 @@ export default function LivePageInner() {
 
       {explain && (
         <Panel title="Explainable SPC Copilot" className="mt-6">
-          <pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl bg-aspc-elevated p-4 text-xs text-aspc-text">
-            {JSON.stringify(explain, null, 2)}
-          </pre>
-          <button
-            type="button"
-            className="mt-3 text-sm text-aspc-muted hover:text-aspc-text"
-            onClick={() => setExplain(null)}
-          >
+          <JsonBlock value={explain} />
+          <Button type="button" variant="ghost" className="mt-3" onClick={() => setExplain(null)} tip="Hide this explanation.">
             Close
-          </button>
+          </Button>
         </Panel>
       )}
     </div>

@@ -28,6 +28,6 @@ setup("authenticate", async ({ page, baseURL }) => {
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: /sign in/i }).click();
   await expect(page).toHaveURL(/\/$/, { timeout: 20_000 });
-  await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
   await page.context().storageState({ path: authFile });
 });

@@ -4,11 +4,10 @@ import dynamic from "next/dynamic";
 import { useMemo, type ComponentType } from "react";
 import { limitAt } from "@/lib/format";
 
-// Plotly requires browser APIs
 const Plot = dynamic(() => import("react-plotly.js"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-72 items-center justify-center rounded-card border border-aspc-border bg-aspc-panel text-sm text-aspc-muted">
+    <div className="flex h-72 items-center justify-center rounded-lg bg-aspc-elevated text-sm text-aspc-muted shadow-recessed">
       Loading chart…
     </div>
   ),
@@ -19,7 +18,6 @@ export interface ControlChartProps {
   ucl: number | number[];
   cl: number;
   lcl: number | number[];
-  /** Indices of out-of-control points (0-based). */
   oocIndices?: number[];
   title?: string;
   height?: number;
@@ -63,7 +61,7 @@ export function ControlChart({
       type: "scatter",
       mode: "lines",
       name: "UCL",
-      line: { color: "#F97316", width: 1.5, dash: "dash" },
+      line: { color: "#f59e0b", width: 1.5, dash: "dash" },
       hoverinfo: "y+name",
     },
     {
@@ -72,7 +70,7 @@ export function ControlChart({
       type: "scatter",
       mode: "lines",
       name: "CL",
-      line: { color: "#E8C547", width: 2 },
+      line: { color: "#4a5568", width: 2 },
       hoverinfo: "y+name",
     },
     {
@@ -81,7 +79,7 @@ export function ControlChart({
       type: "scatter",
       mode: "lines",
       name: "LCL",
-      line: { color: "#F97316", width: 1.5, dash: "dash" },
+      line: { color: "#f59e0b", width: 1.5, dash: "dash" },
       hoverinfo: "y+name",
     },
     {
@@ -90,8 +88,8 @@ export function ControlChart({
       type: "scatter",
       mode: "lines+markers",
       name: "Value",
-      line: { color: "#F2F2F4", width: 1.5 },
-      marker: { color: "#F2F2F4", size: 6 },
+      line: { color: "#2d3436", width: 1.5 },
+      marker: { color: "#22c55e", size: 6 },
     },
     {
       x: oocX,
@@ -99,28 +97,28 @@ export function ControlChart({
       type: "scatter",
       mode: "markers",
       name: "OOC",
-      marker: { color: "#2DD4BF", size: 10, symbol: "x", line: { width: 2, color: "#2DD4BF" } },
+      marker: { color: "#ff4757", size: 10, symbol: "x", line: { width: 2, color: "#ff4757" } },
     },
   ];
 
   const layout = {
-    title: { text: title, font: { color: "#F2F2F4", size: 14 }, x: 0, xanchor: "left" },
+    title: { text: title, font: { color: "#2d3436", size: 14, family: "Inter, sans-serif" }, x: 0, xanchor: "left" },
     paper_bgcolor: "rgba(0,0,0,0)",
-    plot_bgcolor: "#141418",
-    font: { color: "#8A8A96", family: "Sora, sans-serif", size: 11 },
+    plot_bgcolor: "#d1d9e6",
+    font: { color: "#4a5568", family: "JetBrains Mono, monospace", size: 11 },
     margin: { t: 40, r: 16, b: 40, l: 48 },
     height,
     xaxis: {
       title: "Subgroup / Index",
-      gridcolor: "#2A2A32",
+      gridcolor: "#babecc",
       zeroline: false,
-      color: "#8A8A96",
+      color: "#4a5568",
     },
     yaxis: {
       title: "Value",
-      gridcolor: "#2A2A32",
+      gridcolor: "#babecc",
       zeroline: false,
-      color: "#8A8A96",
+      color: "#4a5568",
     },
     legend: {
       orientation: "h",
@@ -135,14 +133,8 @@ export function ControlChart({
   const config = { displayModeBar: false, responsive: true };
 
   return (
-    <div className="w-full overflow-hidden rounded-card border border-aspc-border bg-aspc-panel p-2 shadow-card">
-      <Plot
-        data={data}
-        layout={layout}
-        config={config}
-        style={{ width: "100%" }}
-        useResizeHandler
-      />
+    <div className="w-full overflow-hidden rounded-lg bg-aspc-bg p-2 shadow-recessed">
+      <Plot data={data} layout={layout} config={config} style={{ width: "100%" }} useResizeHandler />
     </div>
   );
 }

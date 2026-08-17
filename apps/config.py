@@ -16,7 +16,12 @@ DEFAULTS: dict[str, Any] = {
     "api": {
         "host": "0.0.0.0",
         "port": 8000,
-        "cors_origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+        "cors_origins": [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+        ],
     },
     "auth": {
         "enabled": True,

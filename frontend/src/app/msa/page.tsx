@@ -2,13 +2,18 @@
 
 import { FormEvent, useState } from "react";
 import {
+  Button,
+  DataTable,
   ErrorBanner,
   FileField,
+  JsonBlock,
   PageHeader,
   Panel,
-  PrimaryButton,
   SelectInput,
   Spinner,
+  Td,
+  Term,
+  TextInput,
 } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import type { AnalyzeResponse } from "@/lib/types";
@@ -53,7 +58,11 @@ export default function MsaPage() {
       <PageHeader
         title="MSA"
         hideTitle
-        subtitle="Gage R&R, bias, linearity, stability — plus continuous MSA drift"
+        subtitle={
+          <>
+            <Term k="gage-rr" />, bias, linearity, stability — plus <Term k="ndc" /> and continuous MSA drift
+          </>
+        }
       />
 
       {error && <ErrorBanner message={error} />}
@@ -85,9 +94,9 @@ export default function MsaPage() {
             <option value="range">Range</option>
           </SelectInput>
           <div className="flex items-end gap-3 md:col-span-2">
-            <PrimaryButton type="submit" disabled={busy || !file}>
+            <Button type="submit" disabled={busy || !file} tip="Check whether the measuring tool is trustworthy.">
               {busy ? "Running…" : "Run MSA"}
-            </PrimaryButton>
+            </Button>
             {busy && <Spinner />}
           </div>
         </form>
@@ -106,32 +115,18 @@ export default function MsaPage() {
             )}
           </div>
           {msa?.result ? (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[24rem] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-aspc-border text-[11px] uppercase tracking-wider text-aspc-muted">
-                    <th className="pb-2 pr-4 font-medium">Metric</th>
-                    <th className="pb-2 font-medium">Value</th>
+            <DataTable headers={["Metric", "Value"]}>
+              {Object.entries(msa.result)
+                .filter(([, v]) => typeof v === "number" || typeof v === "string" || typeof v === "boolean")
+                .map(([k, v]) => (
+                  <tr key={k}>
+                    <Td className="font-mono text-aspc-muted">{k}</Td>
+                    <Td className="font-mono">{typeof v === "number" ? v.toFixed(4) : String(v)}</Td>
                   </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(msa.result)
-                    .filter(([, v]) => typeof v === "number" || typeof v === "string" || typeof v === "boolean")
-                    .map(([k, v]) => (
-                      <tr key={k} className="border-b border-aspc-border/50">
-                        <td className="py-2.5 pr-4 font-mono text-aspc-muted">{k}</td>
-                        <td className="py-2.5 font-mono text-aspc-text">
-                          {typeof v === "number" ? v.toFixed(4) : String(v)}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+            </DataTable>
           ) : (
-            <pre className="max-h-80 overflow-auto rounded-2xl bg-aspc-elevated p-3 text-xs text-aspc-muted">
-              {JSON.stringify(result.report, null, 2)}
-            </pre>
+            <JsonBlock value={result.report} />
           )}
         </Panel>
       )}
@@ -157,31 +152,14 @@ function ContinuousMsaPanel() {
     try {
       const m = measured.split(",").map((s) => Number(s.trim()));
       const r = reference.split(",").map((s) => Number(s.trim()));
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/analyze/msa-continuous`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(typeof window !== "undefined" && localStorage.getItem("aspc_token")
-              ? { Authorization: `Bearer ${localStorage.getItem("aspc_token")}` }
-              : {}),
-          },
-          body: JSON.stringify({
-            measured: m,
-            reference: r,
-            tolerance: Number(tolerance) || 1,
-          }),
-        },
-      );
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || res.statusText);
-      }
-      const body = (await res.json()) as { summary: Record<string, unknown> };
+      const body = await api.analyzeMsaContinuous({
+        measured: m,
+        reference: r,
+        tolerance: Number(tolerance) || 1,
+      });
       setSummary(body.summary);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -190,45 +168,34 @@ function ContinuousMsaPanel() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-aspc-muted">
-        Evaluate reference-standard injections with{" "}
-        <code className="font-mono text-xs">ContinuousMSA</code> (EWMA bias α=0.2, rolling R,
-        calibration alerts).
+        Evaluate reference-standard injections with <Term k="ewma" /> bias (α=0.2), rolling R, and
+        calibration alerts.
       </p>
       {error && <ErrorBanner message={error} />}
       <div className="grid gap-3 md:grid-cols-3">
-        <label className="text-xs text-aspc-muted">
-          Measured
-          <input
-            className="mt-1 w-full rounded-2xl border border-aspc-border bg-aspc-elevated px-3 py-2 font-mono text-sm"
-            value={measured}
-            onChange={(e) => setMeasured(e.target.value)}
-          />
-        </label>
-        <label className="text-xs text-aspc-muted">
-          Reference
-          <input
-            className="mt-1 w-full rounded-2xl border border-aspc-border bg-aspc-elevated px-3 py-2 font-mono text-sm"
-            value={reference}
-            onChange={(e) => setReference(e.target.value)}
-          />
-        </label>
-        <label className="text-xs text-aspc-muted">
-          Tolerance
-          <input
-            className="mt-1 w-full rounded-2xl border border-aspc-border bg-aspc-elevated px-3 py-2 font-mono text-sm"
-            value={tolerance}
-            onChange={(e) => setTolerance(e.target.value)}
-          />
-        </label>
+        <TextInput
+          id="msa_measured"
+          label="Measured"
+          value={measured}
+          onChange={(e) => setMeasured(e.target.value)}
+        />
+        <TextInput
+          id="msa_reference"
+          label="Reference"
+          value={reference}
+          onChange={(e) => setReference(e.target.value)}
+        />
+        <TextInput
+          id="msa_tolerance"
+          label="Tolerance"
+          value={tolerance}
+          onChange={(e) => setTolerance(e.target.value)}
+        />
       </div>
-      <PrimaryButton onClick={run} disabled={busy}>
+      <Button onClick={run} disabled={busy} tip="Compare measured values to a known reference over time.">
         {busy ? "Evaluating…" : "Run continuous MSA"}
-      </PrimaryButton>
-      {summary && (
-        <pre className="max-h-64 overflow-auto rounded-2xl bg-aspc-elevated p-3 text-xs text-aspc-muted">
-          {JSON.stringify(summary, null, 2)}
-        </pre>
-      )}
+      </Button>
+      {summary && <JsonBlock value={summary} />}
     </div>
   );
 }

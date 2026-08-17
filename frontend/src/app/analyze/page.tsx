@@ -6,21 +6,21 @@ import { useRouter } from "next/navigation";
 import { Checklist } from "@/components/Checklist";
 import { ControlChart } from "@/components/ControlChart";
 import { GateList } from "@/components/GateList";
+import { GoLivePanel } from "@/components/GoLivePanel";
 import {
+  Button,
   ErrorBanner,
   FileField,
   PageHeader,
   Panel,
-  PrimaryButton,
   SelectInput,
   Spinner,
+  Term,
   TextInput,
 } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import { formatLimits } from "@/lib/format";
 import type { AnalyzeResponse, Gate, Phase1Checklist, SPCReport } from "@/lib/types";
-
-const API_KEY_STORAGE = "aspc_api_key";
 
 function asReport(raw: AnalyzeResponse["report"]): SPCReport | null {
   if (!raw || typeof raw !== "object") return null;
@@ -38,13 +38,9 @@ export default function AnalyzePage() {
   const [validMax, setValidMax] = useState("");
   const [msaTolerance, setMsaTolerance] = useState("");
   const [busy, setBusy] = useState(false);
-  const [goLiveBusy, setGoLiveBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [streamKey, setStreamKey] = useState("line-1");
-  const [apiKey, setApiKey] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem(API_KEY_STORAGE) || "" : "",
-  );
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -83,36 +79,13 @@ export default function AnalyzePage() {
     result?.checklist ??
     (result?.report as { checklist?: Phase1Checklist })?.checklist) as Phase1Checklist | undefined;
 
-  const primary = report?.limits?.components
-    ? Object.values(report.limits.components)[0]
-    : null;
+  const primary = report?.limits?.components ? Object.values(report.limits.components)[0] : null;
   const oocIndices = report?.signals?.map((s) => s.index) ?? [];
   const limitsVersion = report?.limits?.version;
   const checklistOk = checklist?.passed !== false;
 
-  async function oneClickGoLive() {
-    if (!limitsVersion) {
-      setError("No frozen limits version on this result");
-      return;
-    }
-    if (!apiKey) {
-      setError("Enter X-API-Key for stream mutations");
-      return;
-    }
-    setGoLiveBusy(true);
-    setError(null);
-    try {
-      localStorage.setItem(API_KEY_STORAGE, apiKey);
-      await api.registerStream({ stream_key: streamKey }, apiKey);
-      await api.goLive(streamKey, { limits_version: limitsVersion }, apiKey);
-      router.push(
-        `/live?stream=${encodeURIComponent(streamKey)}&limits=${encodeURIComponent(limitsVersion)}`,
-      );
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : (err as Error).message);
-    } finally {
-      setGoLiveBusy(false);
-    }
+  function goToLive(key: string, limits: string) {
+    router.push(`/live?stream=${encodeURIComponent(key)}&limits=${encodeURIComponent(limits)}`);
   }
 
   return (
@@ -120,13 +93,15 @@ export default function AnalyzePage() {
       <PageHeader
         title="Control Chart Analysis"
         hideTitle
-        subtitle="Upload CSV → POST /analyze/control-chart → gates, checklist, Plotly chart"
+        subtitle={
+          <>
+            Upload a CSV. ASPC runs <Term k="phase-i" />, shows <Term k="gate">gates</Term>, then you can{" "}
+            <Term k="freeze" /> and <Term k="go-live" />.
+          </>
+        }
         actions={
-          <Link
-            href="/onboarding"
-            className="rounded-pill border border-aspc-accent/40 px-3 py-1.5 text-xs text-aspc-accent hover:bg-aspc-accent-soft"
-          >
-            Onboarding wizard
+          <Link href="/onboarding">
+            <Button variant="secondary" tip="Open the guided walkthrough that uses a sample file.">Onboarding wizard</Button>
           </Link>
         }
       />
@@ -198,15 +173,17 @@ export default function AnalyzePage() {
           />
 
           <div className="flex items-end gap-3 md:col-span-2">
-            <PrimaryButton type="submit" disabled={busy || !file}>
+            <Button type="submit" disabled={busy || !file} tip="Calculate a control chart and quality checks from this file.">
               {busy ? "Running…" : "Run analysis"}
-            </PrimaryButton>
+            </Button>
             {busy && <Spinner />}
           </div>
         </form>
         <p className="mt-3 text-xs text-aspc-muted">
-          Freeze can succeed with MSA warn; go-live still requires a passing checklist
-          (including Gage R&amp;R / NDC when study data is supplied).
+          Rulesets: <Term k="nelson" />, <Term k="western-electric" />, <Term k="wheeler" />. Charts include{" "}
+          <Term k="i-mr" />, <Term k="xbar-r" />, and <Term k="ewma" />. Freeze can succeed with MSA warn; go-live
+          still requires a passing checklist (including <Term k="gage-rr" /> / <Term k="ndc" /> when study data is
+          supplied).
         </p>
       </Panel>
 
@@ -224,7 +201,9 @@ export default function AnalyzePage() {
               </div>
               {limitsVersion && (
                 <div>
-                  <span className="text-aspc-muted">Limits version </span>
+                  <span className="text-aspc-muted">
+                    <Term k="limits-version" />{" "}
+                  </span>
                   <span className="font-mono text-aspc-accent">{limitsVersion}</span>
                 </div>
               )}
@@ -237,47 +216,27 @@ export default function AnalyzePage() {
             </div>
           </Panel>
 
-          {gates && <GateList gates={gates} />}
-          {checklist && <Checklist checklist={checklist} />}
+          {gates && (
+            <Panel title="Gates">
+              <GateList gates={gates} />
+            </Panel>
+          )}
+          {checklist && (
+            <Panel title="Phase I Checklist">
+              <Checklist checklist={checklist} />
+            </Panel>
+          )}
 
           {limitsVersion && (
-            <Panel title="One-click go-live">
-              <div className="grid gap-4 md:grid-cols-3">
-                <TextInput
-                  id="golive_stream"
-                  label="Stream key"
-                  value={streamKey}
-                  onChange={(e) => setStreamKey(e.target.value)}
-                />
-                <TextInput
-                  id="golive_key"
-                  label="X-API-Key"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                />
-                <div className="flex items-end gap-2">
-                  <PrimaryButton
-                    type="button"
-                    onClick={oneClickGoLive}
-                    disabled={goLiveBusy || !checklistOk}
-                  >
-                    {goLiveBusy ? "Activating…" : "Go live → Live"}
-                  </PrimaryButton>
-                  <Link
-                    href={`/live?stream=${encodeURIComponent(streamKey)}&limits=${encodeURIComponent(limitsVersion)}`}
-                    className="rounded-pill border border-aspc-border px-3 py-2.5 text-sm text-aspc-muted hover:text-aspc-text"
-                  >
-                    Open Live only
-                  </Link>
-                </div>
-              </div>
-              {!checklistOk && (
-                <p className="mt-2 text-xs text-aspc-stop">
-                  Checklist did not pass — go-live will be rejected by the API until resolved.
-                </p>
-              )}
-            </Panel>
+            <GoLivePanel
+              title="One-click go-live"
+              limitsVersion={limitsVersion}
+              streamKey={streamKey}
+              onStreamKeyChange={setStreamKey}
+              disabled={!checklistOk}
+              onSuccess={goToLive}
+              onOpenLive={goToLive}
+            />
           )}
 
           {report?.plotted_values && primary && (

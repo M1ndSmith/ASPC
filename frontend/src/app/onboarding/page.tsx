@@ -4,19 +4,10 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Checklist } from "@/components/Checklist";
 import { GateList } from "@/components/GateList";
-import {
-  ErrorBanner,
-  PageHeader,
-  Panel,
-  PrimaryButton,
-  SelectInput,
-  Spinner,
-  TextInput,
-} from "@/components/ui";
+import { GoLivePanel } from "@/components/GoLivePanel";
+import { Button, ErrorBanner, PageHeader, Panel, SelectInput, Spinner, Term } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import type { AnalyzeResponse, Gate, Phase1Checklist, SPCReport } from "@/lib/types";
-
-const API_KEY_STORAGE = "aspc_api_key";
 
 function asReport(raw: AnalyzeResponse["report"]): SPCReport | null {
   if (!raw || typeof raw !== "object") return null;
@@ -25,6 +16,8 @@ function asReport(raw: AnalyzeResponse["report"]): SPCReport | null {
 }
 
 type Step = 1 | 2 | 3 | 4;
+
+const STEPS = ["Sample + establish", "Review gates", "Go live", "Open Live"] as const;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -35,9 +28,6 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [streamKey, setStreamKey] = useState("demo-line-1");
-  const [apiKey, setApiKey] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem(API_KEY_STORAGE) || "" : "",
-  );
   const [goLiveDone, setGoLiveDone] = useState(false);
 
   const report = useMemo(() => (result ? asReport(result.report) : null), [result]);
@@ -69,30 +59,6 @@ export default function OnboardingPage() {
     }
   }
 
-  async function doGoLive() {
-    if (!limitsVersion) {
-      setError("No frozen limits version — Phase I must freeze before go-live");
-      return;
-    }
-    if (!apiKey) {
-      setError("API key required (or set ASPC_DEV_INSECURE and use any key in local demos)");
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      localStorage.setItem(API_KEY_STORAGE, apiKey);
-      await api.registerStream({ stream_key: streamKey }, apiKey);
-      await api.goLive(streamKey, { limits_version: limitsVersion }, apiKey);
-      setGoLiveDone(true);
-      setStep(4);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : (err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   function openLive() {
     const q = new URLSearchParams({
       stream: streamKey,
@@ -106,22 +72,29 @@ export default function OnboardingPage() {
       <PageHeader
         title="Onboarding"
         hideTitle
-        subtitle="First stream in minutes — sample → establish → go-live → Live WS"
+        subtitle={
+          <>
+            Walk a sample through the full path: load data, lock limits, then watch a live stream.{" "}
+            <span className="font-mono text-xs">
+              sample → <Term k="establish" /> → <Term k="go-live" /> → Live WS
+            </span>
+          </>
+        }
       />
 
       {error && <ErrorBanner message={error} />}
 
       <Panel title={`Step ${step} of 4`} className="mb-6">
         <ol className="mb-4 flex flex-wrap gap-2 text-xs text-aspc-muted">
-          {["Sample + establish", "Review gates", "Go live", "Open Live"].map((label, i) => (
+          {STEPS.map((label, i) => (
             <li
               key={label}
-              className={`rounded-pill border px-3 py-1 ${
+              className={`rounded-pill px-3 py-1 font-mono ${
                 step === i + 1
-                  ? "border-aspc-accent text-aspc-accent"
+                  ? "bg-aspc-accent text-white shadow-key"
                   : step > i + 1
-                    ? "border-aspc-ok/40 text-aspc-ok"
-                    : "border-aspc-border"
+                    ? "bg-aspc-ok/15 text-aspc-ok"
+                    : "bg-aspc-elevated shadow-recessed"
               }`}
             >
               {i + 1}. {label}
@@ -130,42 +103,64 @@ export default function OnboardingPage() {
         </ol>
 
         {step === 1 && (
-          <div className="grid gap-4 md:grid-cols-2">
-            <SelectInput
-              id="dataset"
-              label="Sample dataset"
-              value={dataset}
-              onChange={(e) => setDataset(e.target.value)}
-            >
-              <option value="spc_individual_in_control">I-MR in control</option>
-              <option value="spc_individual_out_of_control">I-MR with mean shift</option>
-              <option value="spc_subgroup_data">Xbar-R subgroups</option>
-              {catalog
-                .filter(
-                  (c) =>
-                    ![
-                      "spc_individual_in_control",
-                      "spc_individual_out_of_control",
-                      "spc_subgroup_data",
-                    ].includes(c),
-                )
-                .map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-            </SelectInput>
-            <div className="flex items-end gap-3">
-              <PrimaryButton type="button" onClick={loadSampleAndAnalyze} disabled={busy}>
-                {busy ? "Running…" : "Load sample & establish"}
-              </PrimaryButton>
-              {busy && <Spinner />}
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-bold">Load a sample and establish limits</h3>
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-aspc-muted">
+                What this does: ASPC runs <Term k="phase-i" /> on a known-good file so you do not need your own CSV yet.
+                Samples include <Term k="i-mr" /> and <Term k="xbar-r" />.
+              </p>
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-aspc-muted">
+                What you get: a chart type, proposed limits, and a list of <Term k="gate">gates</Term> to review.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <SelectInput
+                id="dataset"
+                label="Sample dataset"
+                value={dataset}
+                onChange={(e) => setDataset(e.target.value)}
+              >
+                <option value="spc_individual_in_control">I-MR in control</option>
+                <option value="spc_individual_out_of_control">I-MR with mean shift</option>
+                <option value="spc_subgroup_data">Xbar-R subgroups</option>
+                {catalog
+                  .filter(
+                    (c) =>
+                      !["spc_individual_in_control", "spc_individual_out_of_control", "spc_subgroup_data"].includes(c),
+                  )
+                  .map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+              </SelectInput>
+              <div className="flex items-end gap-3">
+                <Button
+                  type="button"
+                  onClick={loadSampleAndAnalyze}
+                  disabled={busy}
+                  tip="Load a practice file and calculate the first set of limits."
+                >
+                  {busy ? "Running…" : "Load sample & establish"}
+                </Button>
+                {busy && <Spinner />}
+              </div>
             </div>
           </div>
         )}
 
         {step === 2 && result && (
           <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-bold">Review gates and freeze</h3>
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-aspc-muted">
+                What this does: each <Term k="gate" /> is a quality check. A <Term k="stop-gate" /> blocks freeze.
+              </p>
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-aspc-muted">
+                What you get: a <Term k="limits-version" /> you can attach to a live stream.
+              </p>
+            </div>
             <p className="text-sm text-aspc-muted">
               Run <span className="font-mono text-aspc-accent">{result.run_id}</span>
               {limitsVersion && (
@@ -175,72 +170,76 @@ export default function OnboardingPage() {
                 </>
               )}
             </p>
-            {gates && <GateList gates={gates} />}
-            {checklist && <Checklist checklist={checklist} />}
+            {gates && (
+              <Panel title="Gates">
+                <GateList gates={gates} />
+              </Panel>
+            )}
+            {checklist && (
+              <Panel title="Phase I Checklist">
+                <Checklist checklist={checklist} />
+              </Panel>
+            )}
             <div className="flex flex-wrap gap-2">
-              <PrimaryButton type="button" onClick={() => setStep(3)} disabled={!limitsVersion}>
+              <Button type="button" onClick={() => setStep(3)} disabled={!limitsVersion} tip="Next: attach these limits to a live line.">
                 Continue to go-live
-              </PrimaryButton>
-              <button
-                type="button"
-                className="rounded-pill border border-aspc-border px-4 py-2 text-sm text-aspc-muted"
-                onClick={() => setStep(1)}
-              >
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setStep(1)} tip="Go back and pick a different sample.">
                 Back
-              </button>
+              </Button>
             </div>
             {!limitsVersion && (
-              <p className="text-sm text-aspc-stop">
-                Limits were not frozen — resolve STOP gates and retry.
-              </p>
+              <p className="text-sm text-aspc-accent">Limits were not frozen — resolve STOP gates and retry.</p>
             )}
           </div>
         )}
 
         {step === 3 && (
-          <div className="grid gap-4 md:grid-cols-2">
-            <TextInput
-              id="stream_key"
-              label="Stream key"
-              value={streamKey}
-              onChange={(e) => setStreamKey(e.target.value)}
-            />
-            <TextInput
-              id="api_key"
-              label="X-API-Key"
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <div className="flex items-end gap-2 md:col-span-2">
-              <PrimaryButton type="button" onClick={doGoLive} disabled={busy || !limitsVersion}>
-                {busy ? "Activating…" : "Register + go live"}
-              </PrimaryButton>
-              <button
-                type="button"
-                className="rounded-pill border border-aspc-border px-4 py-2 text-sm text-aspc-muted"
-                onClick={() => setStep(2)}
-              >
-                Back
-              </button>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-bold">Activate the stream</h3>
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-aspc-muted">
+                What this does: <Term k="go-live" /> tells the engine to judge new points against these locked limits.
+              </p>
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-aspc-muted">
+                What you get: a named <Term k="stream-key" /> you can open on Live.
+              </p>
             </div>
-            <p className="text-xs text-aspc-muted md:col-span-2">
-              Requires Timescale persistence for the stream registry. Limits version:{" "}
-              <span className="font-mono">{limitsVersion || "—"}</span>
-            </p>
+            <GoLivePanel
+              title="Go live"
+              limitsVersion={limitsVersion}
+              streamKey={streamKey}
+              onStreamKeyChange={setStreamKey}
+              onSuccess={() => {
+                setGoLiveDone(true);
+                setStep(4);
+              }}
+            />
+            <Button type="button" variant="ghost" onClick={() => setStep(2)} tip="Go back to the quality checks.">
+              Back
+            </Button>
           </div>
         )}
 
         {step === 4 && (
           <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-bold">Watch the live chart</h3>
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-aspc-muted">
+                What this does: opens <Term k="phase-ii" /> monitoring for the stream you just activated.
+              </p>
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-aspc-muted">
+                What you get: a WebSocket chart and an alert feed against frozen limits.
+              </p>
+            </div>
             <p className="text-sm text-aspc-ok">
               {goLiveDone
                 ? `Stream ${streamKey} is live against frozen limits.`
                 : "Ready to open Live monitoring."}
             </p>
-            <PrimaryButton type="button" onClick={openLive}>
+            <Button type="button" onClick={openLive} tip="Open the live chart for this line.">
               Open Live console
-            </PrimaryButton>
+            </Button>
           </div>
         )}
       </Panel>

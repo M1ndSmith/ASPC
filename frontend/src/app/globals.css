@@ -1,13 +1,26 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
-  --aspc-bg: #0b0b0f;
-  --aspc-accent: #e8c547;
+  color-scheme: light;
+  --aspc-bg: #e0e5ec;
+  --aspc-panel: #f0f2f5;
+  --aspc-muted: #d1d9e6;
+  --aspc-text: #2d3436;
+  --aspc-label: #4a5568;
+  --aspc-accent: #ff4757;
+  --aspc-accent-fg: #ffffff;
+  --aspc-border: #babecc;
+  --aspc-highlight: #ffffff;
+  --aspc-ok: #22c55e;
+  --shadow-card: 8px 8px 16px #babecc, -8px -8px 16px #ffffff;
+  --shadow-floating: 12px 12px 24px #babecc, -12px -12px 24px #ffffff, inset 1px 1px 0 rgba(255, 255, 255, 0.5);
+  --shadow-pressed: inset 6px 6px 12px #babecc, inset -6px -6px 12px #ffffff;
+  --shadow-recessed: inset 4px 4px 8px #babecc, inset -4px -4px 8px #ffffff;
+  --ring: #ff4757;
 }
 
 html,
@@ -16,10 +29,28 @@ body {
 }
 
 body {
-  background: var(--aspc-bg);
-  color: #f2f2f4;
-  font-family: "Sora", system-ui, sans-serif;
+  background-color: var(--aspc-bg);
+  color: var(--aspc-text);
+  font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.28;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+#__next,
+body > div:first-child {
+  position: relative;
+  z-index: 1;
 }
 
 * {
@@ -27,11 +58,10 @@ body {
 }
 
 ::selection {
-  background: rgba(232, 197, 71, 0.28);
+  background: rgba(255, 71, 87, 0.22);
 }
 
-#__next,
-body > div:first-child {
-  position: relative;
-  z-index: 1;
+.term-underline {
+  border-bottom: 1px dotted #4a5568;
+  cursor: help;
 }

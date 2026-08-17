@@ -12,3 +12,5 @@ e2e/.auth
 .DS_Store
 .vercel
 .env*
+!.env.example
+!.env.development
